@@ -8,6 +8,6 @@ for directory in ['.github','cmd','internal','scripts','docs']:
   if p.is_file() and '__pycache__' not in p.parts and p.name!='provider_fixture.go':files.append(p)
 with zipfile.ZipFile(dist/'release-radar-source.zip','w',zipfile.ZIP_DEFLATED) as z:
  for p in sorted(files):z.write(p,pathlib.Path('release-radar')/p.relative_to(root))
-names=['release-radar.ndp','release-radar-source.zip','preview.html']
+names=[name for name in ['release-radar.ndp','release-radar-source.zip','preview.html'] if (dist/name).exists()]
 (dist/'SHA256SUMS').write_text(''.join(hashlib.sha256((dist/name).read_bytes()).hexdigest()+'  '+name+'\n' for name in names))
 print('Source bundle contains project files only: no runtime reports, state, credentials or logs.')
