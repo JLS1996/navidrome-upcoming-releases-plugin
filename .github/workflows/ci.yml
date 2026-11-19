@@ -1,0 +1,33 @@
+name: CI
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Test and vet
+        run: |
+          go test -race -cover ./...
+          go vet ./...
+      - name: Install pinned TinyGo
+        run: |
+          curl -fsSL https://github.com/tinygo-org/tinygo/releases/download/v0.40.1/tinygo0.40.1.linux-amd64.tar.gz -o "$RUNNER_TEMP/tinygo.tar.gz"
+          echo "064fc0c07f4d71f7369b168c337caa88ef32a6b00b16449cea44790ccadfc2b4  $RUNNER_TEMP/tinygo.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/tinygo.tar.gz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/tinygo/bin" >> "$GITHUB_PATH"
+      - name: Build plugin
+        run: ./scripts/build.sh
+      - name: Check public files
+        run: python3 scripts/check_public.py --tracked
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-radar-plugin
+          path: dist/release-radar.ndp

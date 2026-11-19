@@ -1,0 +1,25 @@
+# Runtime data and credentials
+/test-runtime/
+/browser-results/
+/.cache/
+**/__pycache__/
+.env
+.env.*
+*.log
+*.db
+*.sqlite
+*.sqlite3
+*.pem
+*.key
+auth.json
+state.json
+integrations.json
+navidrome.toml
+client.json
+client_secret*.json
+google-oauth*.json
+# Build-only and local test artifacts
+/internal/radar/provider_fixture.go
+/dist/*
+!/dist/release-radar.ndp
+!/dist/plugin.sha256

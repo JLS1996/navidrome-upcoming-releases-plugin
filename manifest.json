@@ -1,0 +1,187 @@
+{
+  "name": "Release Radar",
+  "author": "Release Radar contributors",
+  "version": "0.2.1",
+  "description": "Upcoming music releases with an offline list/calendar dashboard, .ics export, optional ntfy alerts and CalDAV or Google Calendar sync.",
+  "permissions": {
+    "storage": {
+      "reason": "Save resumable release checks and the local HTML dashboard"
+    },
+    "scheduler": {
+      "reason": "Refresh library daily and check release pages in short steps"
+    },
+    "users": {
+      "reason": "Act as the explicitly configured Navidrome user"
+    },
+    "library": {
+      "reason": "Read assigned library metadata and optionally export HTML into a library when administrator write access is granted",
+      "filesystem": true
+    },
+    "subsonicapi": {
+      "reason": "Read artists and MusicBrainz IDs internally"
+    },
+    "http": {
+      "reason": "Fetch MusicBrainz metadata and optionally publish ntfy notifications or sync a configured calendar.",
+      "requiredHosts": [
+        "musicbrainz.org",
+        "ntfy.sh",
+        "www.googleapis.com",
+        "oauth2.googleapis.com",
+        "caldav.icloud.com",
+        "*.icloud.com"
+      ]
+    }
+  },
+  "config": {
+    "schema": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "title": "Navidrome username",
+          "description": "Must be assigned under plugin user access."
+        },
+        "contact": {
+          "type": "string",
+          "title": "MusicBrainz contact email or project URL",
+          "description": "Included in the MusicBrainz User-Agent; never embedded in HTML."
+        },
+        "ahead_days": {
+          "type": "integer",
+          "title": "Days ahead",
+          "default": 90,
+          "minimum": 1,
+          "maximum": 730
+        },
+        "past_days": {
+          "type": "integer",
+          "title": "Days back",
+          "default": 30,
+          "minimum": 0,
+          "maximum": 365
+        },
+        "include_singles": {
+          "type": "boolean",
+          "title": "Include singles",
+          "default": false
+        },
+        "include_secondary": {
+          "type": "boolean",
+          "title": "Include secondary types (live, compilations, etc.)",
+          "default": false
+        },
+        "auto_match": {
+          "type": "boolean",
+          "title": "Conservatively match artists without IDs",
+          "default": true
+        },
+        "artist_overrides": {
+          "type": "string",
+          "title": "Artist ID overrides (JSON)",
+          "default": "{}",
+          "description": "Map Navidrome artist IDs to MusicBrainz artist UUIDs."
+        },
+        "excluded_artists": {
+          "type": "string",
+          "title": "Excluded Navidrome artist IDs (JSON array)",
+          "default": "[]"
+        },
+        "export_library_id": {
+          "type": "integer",
+          "title": "Export HTML to library ID (0 disables)",
+          "default": 0,
+          "minimum": 0,
+          "description": "Writes upcoming-releases.html to the library root. Requires explicit library write access."
+        },
+        "refresh_token": {
+          "type": "string",
+          "title": "Refresh token",
+          "default": "",
+          "description": "Change to any new value to start a release refresh; toggling enable alone resumes saved progress."
+        },
+        "calendar_namespace": {
+          "type": "string",
+          "title": "Calendar instance namespace",
+          "default": "release-radar",
+          "description": "Use a unique value if several plugin installations sync to the same calendar. Changing this does not delete old events."
+        },
+        "ntfy_server": {
+          "type": "string",
+          "title": "ntfy server",
+          "default": "https://ntfy.sh"
+        },
+        "ntfy_topic": {
+          "type": "string",
+          "title": "ntfy topic (blank disables alerts)",
+          "default": "",
+          "description": "Topics on the public service are public unless access-controlled. Use an unguessable topic or an access-controlled server."
+        },
+        "ntfy_access_token": {
+          "type": "string",
+          "title": "ntfy access token",
+          "default": "",
+          "format": "password"
+        },
+        "ntfy_notify_initial": {
+          "type": "boolean",
+          "title": "Notify for existing releases on first enable",
+          "default": false
+        },
+        "calendar_provider": {
+          "type": "string",
+          "title": "Calendar sync provider",
+          "enum": [
+            "none",
+            "caldav",
+            "google"
+          ],
+          "default": "none"
+        },
+        "caldav_calendar_url": {
+          "type": "string",
+          "title": "CalDAV calendar collection URL",
+          "default": "",
+          "description": "Full writable calendar URL, not the account discovery URL. Prefer a dedicated calendar. Other hosts need an explicit manifest allowlist entry."
+        },
+        "caldav_username": {
+          "type": "string",
+          "title": "CalDAV username",
+          "default": ""
+        },
+        "caldav_app_password": {
+          "type": "string",
+          "title": "CalDAV app password",
+          "default": "",
+          "format": "password"
+        },
+        "google_calendar_id": {
+          "type": "string",
+          "title": "Google Calendar ID",
+          "default": "",
+          "description": "ID of a dedicated writable calendar. Not a public sharing URL."
+        },
+        "google_client_id": {
+          "type": "string",
+          "title": "Google OAuth desktop client ID",
+          "default": ""
+        },
+        "google_client_secret": {
+          "type": "string",
+          "title": "Google OAuth client secret",
+          "default": "",
+          "format": "password"
+        },
+        "google_refresh_token": {
+          "type": "string",
+          "title": "Google OAuth refresh token",
+          "default": "",
+          "format": "password",
+          "description": "Obtain locally with scripts/google_authorize.py; no Google credentials go into the HTML."
+        }
+      },
+      "required": [
+        "username"
+      ]
+    }
+  }
+}
