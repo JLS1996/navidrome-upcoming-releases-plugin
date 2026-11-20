@@ -112,3 +112,12 @@ bundles include only whitelisted project paths; raw runtime reports are excluded
 
 CI runs native tests, validates public files, builds the WASM plugin and uploads the
 plugin package as a build artifact.
+
+## GitHub releases
+
+Update the manifest/runtime version and add notes in `docs/releases/vVERSION.md`.
+Push a matching `vVERSION` tag on the reviewed commit. The tag-only Release
+workflow verifies the version, runs tests, builds with pinned TinyGo, checks
+public files and publishes the plugin, tracked-source archive and SHA256SUMS.
+It uses GitHub's repository token; no personal upload token is stored in the repo.
+An existing draft for the tag is completed. A published release is not overwritten.
