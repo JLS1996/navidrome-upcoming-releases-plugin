@@ -3,6 +3,7 @@
 ## 0.3.1
 
 - Fit all seven calendar columns on mobile without sideways scrolling.
+- Regenerate reports immediately after upgrades without refetching completed artists.
 - Show compact release counts with full titles below the selected day.
 - Add keyboard date navigation and distinguish today from the selected day.
 - Move Generated files above the settings tabs and Library access before permissions.

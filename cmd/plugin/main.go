@@ -182,7 +182,7 @@ func (p *plugin) tick() error {
 	}
 	previousProblem := s.Problem
 	s.Problem = ""
-	view := fmt.Sprintf("%d/%d/%v/%v/%t", c.AheadDays, c.PastDays, c.PrimaryTypes, c.SecondaryTypes, c.IncludeStandard) + ic.Fingerprint()
+	view := radar.Version + "/" + fmt.Sprintf("%d/%d/%v/%v/%t", c.AheadDays, c.PastDays, c.PrimaryTypes, c.SecondaryTypes, c.IncludeStandard) + ic.Fingerprint()
 	viewChanged := s.ViewConfig != view
 	s.ViewConfig = view
 	d, loadErr := radar.LoadDeliveries(dir)

@@ -6,7 +6,8 @@ Tested with Navidrome 0.64.2, Go 1.25.x and TinyGo 0.40.1.
   retry/backoff, escaping, state validation and safe file writes.
 - Integration tests run the actual WASM plugin in Navidrome with disposable local
   services. They exercise grants-only identity, storage-only output, 429/503
-  recovery, ntfy alerts, CalDAV writes, Google event CRUD, restarts and revocation.
+  recovery, ntfy alerts, CalDAV writes, Google event CRUD, idle upgrade refresh,
+  restarts and revocation.
 - The Navidrome configuration-form test checks categorized settings, spacing,
   release selectors, information outside the tabs, masked credentials and saving/reloading. CI also checks the
   manifest's schema and UI controls.

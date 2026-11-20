@@ -47,7 +47,8 @@ reverse-proxy file mappings.
 ## Updating
 
 Replace the `.ndp`, rescan plugins, and reload the settings page. Copy the newly
-generated HTML again if you view it on another device.
+generated HTML again if you view it on another device. Upgrades regenerate the
+report even when all lookups are already complete.
 
 For an upgrade from 0.2.x:
 
