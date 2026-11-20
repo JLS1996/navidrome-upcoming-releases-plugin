@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.0
+
+- Select albums, EPs, singles, broadcasts and other formats independently.
+- Add individual MusicBrainz secondary-type filters, including live, remix and demo.
+- Remove username and contact fields; use one granted user and project identification.
+- Keep files exclusively in plugin storage and remove music-library write access.
+- Move artist matching and manual refresh into General settings.
+- Prefer mobile calendar sharing where available, hiding the direct download action.
+- Deduplicate shared releases and keep artist credits consistent across outputs.
+- Fix stale retry/status messages, pagination validation and remote event recreation.
+- Validate persisted retry metadata and clear report data when access cannot be verified.
+- Simplify installation, configuration, integration and limitations documentation.
+
 ## 0.2.4
 
 - Back off across the whole MusicBrainz queue for transient service/network failures.

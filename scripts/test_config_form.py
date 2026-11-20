@@ -55,10 +55,10 @@ try:
   page.get_by_text('Unable to render configuration form.',exact=False).wait_for()
   assert page.get_by_text('unknown format "password"',exact=False).count()>0,'did not reproduce the reported AJV failure'
   write_package(fixed);api('/api/plugin/rescan','POST')
-  page.reload();page.get_by_label('Navidrome username',exact=True).wait_for()
+  page.reload();page.get_by_label('Artist ID overrides',exact=True).wait_for()
   assert page.get_by_text('Unable to render configuration form.',exact=False).count()==0
   titles={name:fixed['config']['schema']['properties'][name]['title'] for name in secret_fields}
-  categories=['Library','Releases','Local files','Notifications','Calendar']
+  categories=['General','Releases','Local files','Notifications','Calendar']
   def category(name):
    try:page.get_by_role('tab',name=name,exact=True).click(timeout=5000)
    except Exception:
@@ -95,16 +95,25 @@ try:
   for name in ['google_client_secret','google_refresh_token']:
    control=page.get_by_label(titles[name],exact=True);control.wait_for();assert control.get_attribute('type')=='password';control.fill('fixture-'+name)
   assert_spacing()
-  # A blank username must save successfully; granted users determine the account.
-  category('Library');assert page.get_by_label('Navidrome username',exact=True).input_value()==''
+  category('General')
+  assert page.get_by_label('Navidrome username',exact=True).count()==0
+  assert page.get_by_label('MusicBrainz contact',exact=True).count()==0
+  category('Local files');assert page.get_by_label('Export library ID',exact=True).count()==0
+  category('Releases')
+  for title in ['Albums','EPs','Singles','Live','Compilations','Demos','Field recordings']:
+   assert page.get_by_role('checkbox',name=title,exact=True).count()==1
+  page.get_by_role('checkbox',name='Live',exact=True).check()
+  page.get_by_role('checkbox',name='Singles',exact=True).check()
   with page.expect_response(lambda r:r.request.method=='PUT' and '/api/plugin/release-radar' in r.url) as saved:
    page.get_by_role('button',name=re.compile(r'^save$',re.I)).click()
   assert saved.value.status==200,'configuration could not be saved without a username'
   record=api('/api/plugin/release-radar');values=json.loads(record['config'])
   assert not record['enabled'],'test must not enable outbound integrations'
-  assert values.get('username','')==''
+  for removed in ['username','contact','export_library_id','include_secondary']:assert removed not in values
+  assert values['include_live'] is True and values['include_singles'] is True
   for name in secret_fields:assert values[name]=='fixture-'+name
-  page.reload();page.get_by_label('Navidrome username',exact=True).wait_for()
+  page.reload();page.get_by_label('Artist ID overrides',exact=True).wait_for()
+  category('Releases');assert page.get_by_role('checkbox',name='Live',exact=True).is_checked()
   category('Notifications');assert page.get_by_label(titles['ntfy_access_token'],exact=True).input_value()=='fixture-ntfy_access_token'
   category('Calendar')
   for name in ['google_client_secret','google_refresh_token']:

@@ -31,6 +31,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
    if key not in google:return self.reply(404)
    return self.reply(200,json.dumps(google[key]).encode())
   q=parse_qs(urlsplit(self.path).query);offset=int(q.get('offset',['0'])[0]);requests.append({'at':time.time(),'path':self.path})
+  assert 'Authorization' not in self.headers,'public metadata lookups must not authenticate'
+  assert 'https://github.com/JLS1996/navidrome-upcoming-releases-plugin' in self.headers.get('User-Agent','')
+  assert 'private-unused' not in self.headers.get('User-Agent','')
   if rate_limit:
    return self.reply(rate_limit.pop(0),headers={'Retry-After':'3'})
   date=(datetime.date.today()+datetime.timedelta(days=10+version[0])).isoformat()
@@ -113,7 +116,8 @@ def update(**kwargs):return call('/api/plugin/release-radar','PUT',kwargs)
 def state():return json.loads(statefile.read_text())
 def completed():
  s=state();return s if len(s['entries'])==1 and s['entries'][0]['phase']=='done' else None
-common={'username':'','auto_match':False,'export_library_id':1,'ntfy_server':'https://ntfy.sh/ntfy','ntfy_topic':'fixture-topic','ntfy_access_token':'fixture-ntfy-secret','calendar_provider':'caldav','caldav_calendar_url':'https://caldav.icloud.com/caldav/','caldav_username':'fixture-user','caldav_app_password':'fixture-app-password'}
+# Legacy keys must be ignored: identity comes from grants and output stays in storage.
+common={'username':'obsolete-user','contact':'private-unused@example.com','auto_match':False,'export_library_id':1,'ntfy_server':'https://ntfy.sh/ntfy','ntfy_topic':'fixture-topic','ntfy_access_token':'fixture-ntfy-secret','calendar_provider':'caldav','caldav_calendar_url':'https://caldav.icloud.com/caldav/','caldav_username':'fixture-user','caldav_app_password':'fixture-app-password'}
 def settings(**changes):common.update(changes);return json.dumps(common)
 def deliveries():return json.loads((storage/'integrations.json').read_text())
 def owned_caldav():return {k:v for k,v in caldav.items() if '/rr-' in k}
@@ -126,7 +130,7 @@ try:
   from urllib.parse import urlencode
   r=call('/rest/getArtists?'+urlencode(p,doseq=True));return r['subsonic-response']['artists'].get('index')
  wait_for(scanned)
- update(config=settings(),allUsers=True,allLibraries=True,allowWriteAccess=True,enabled=True)
+ update(config=settings(),allUsers=True,allLibraries=True,allowWriteAccess=False,enabled=True)
  wait_for(lambda:state().get('musicBrainzFailures')==2,90)
  paused=state();assert paused['entries'][0]['phase']=='releases' and not paused['entries'][0].get('problem')
  assert 'automatic retry after' in (storage/'upcoming-releases.html').read_text()
@@ -134,10 +138,11 @@ try:
  first=wait_for(completed,120);assert len(first['entries'][0]['releases'])==1
  wait_for(lambda:len(owned_caldav())==1 and deliveries()['ntfyReady'])
  assert not notifications,'initial notification backlog was not suppressed'
- assert (storage/'music-releases.ics').exists() and (base/'music/music-releases.ics').exists()
- assert (base/'music/upcoming-releases.html').exists(),'library export missing'
- export_mode=(base/'music/upcoming-releases.html').stat().st_mode & 0o777
- # WASI creates 0600 regardless of requested mode: record, do not claim cross-user access.
+ assert (storage/'music-releases.ics').exists()
+ assert not (base/'music/upcoming-releases.html').exists() and not (base/'music/music-releases.ics').exists(),'legacy setting wrote outside plugin storage'
+ storage_mode=(storage/'upcoming-releases.html').stat().st_mode & 0o777
+ assert storage_mode==0o600,'reports must be private'
+
  html=(storage/'upcoming-releases.html').read_text();assert '[fixture] Updated release 1' in html and '&lt;script&gt;window.pwned=1&lt;/script&gt;' in html
  assert '<script>window.pwned=1</script>' not in html
  assert len(requests)==4,requests
@@ -187,7 +192,7 @@ try:
  wait_for(lambda:call('/api/plugin/release-radar').get('enabled') is False)
  before_revoked=len(requests);time.sleep(3);assert len(requests)==before_revoked,'requests continued after revocation'
  # Navidrome disables the runtime before it can clear old disk snapshots.
- results={'navidrome':'0.64.2','wasm_runtime':True,'storage_and_atomic_rename':True,'real_library_discovery':True,'http_429_backoff':True,'http_503_global_backoff_and_restart':True,'pagination_and_deduplication':True,'metadata_escaping_in_wasm':True,'restart_persistence':True,'changed_release_replaces_snapshot':True,'display_config_refresh':True,'library_revocation_disables_plugin':True,'old_disk_snapshot_requires_manual_removal':True,'library_html_export':True,'export_file_mode':oct(export_mode),'ntfy_baseline_and_update_alerts':True,'ntfy_notifications':len(notifications),'caldav_create_and_date_update':True,'google_token_refresh_create_patch_delete':True,'unrelated_calendar_event_preserved':True,'ics_file_export':True,'fixture_requests':len(requests),'user_library_revocation_clears_cache':True,'automatic_granted_user_selection':True,'ambiguous_grants_stop_processing':True}
+ results={'navidrome':'0.64.2','wasm_runtime':True,'storage_and_atomic_rename':True,'real_library_discovery':True,'http_429_backoff':True,'http_503_global_backoff_and_restart':True,'pagination_and_deduplication':True,'metadata_escaping_in_wasm':True,'restart_persistence':True,'changed_release_replaces_snapshot':True,'display_config_refresh':True,'library_revocation_disables_plugin':True,'old_disk_snapshot_requires_manual_removal':True,'storage_only_reports':True,'storage_file_mode':oct(storage_mode),'legacy_identity_and_contact_ignored':True,'ntfy_baseline_and_update_alerts':True,'ntfy_notifications':len(notifications),'caldav_create_and_date_update':True,'google_token_refresh_create_patch_delete':True,'unrelated_calendar_event_preserved':True,'ics_file_export':True,'fixture_requests':len(requests),'user_library_revocation_clears_cache':True,'automatic_granted_user_selection':True,'ambiguous_grants_stop_processing':True}
  (ROOT/'dist/integration-results.json').write_text(json.dumps(results,indent=2));print(json.dumps(results,indent=2))
 finally:
  stop();fixture.shutdown()

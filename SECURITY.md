@@ -14,10 +14,10 @@ No additional plugin route or unauthenticated Navidrome view is installed.
 
 ## Access and credentials
 
-- Each callback checks the configured user's current library access before using
+- Each callback checks the granted user's current library access before using
   cached artist data. Revoked access invalidates the corresponding cache.
 - Reports contain library information. Protect them like the underlying library.
-  Previously copied/exported reports are snapshots and need manual removal.
+  Previously copied reports are snapshots and need manual removal.
 - Notification/calendar integrations are off by default. External destinations must
   use HTTPS; redirects are not followed with credentials.
 - A public ntfy topic is not private. A bearer token alone does not prove that a

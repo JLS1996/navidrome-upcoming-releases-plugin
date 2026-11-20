@@ -20,7 +20,7 @@ func AccessibleLibraries(raw string, granted []int) ([]int, error) {
 		} `json:"subsonic-response"`
 	}
 	if json.Unmarshal([]byte(raw), &envelope) != nil || envelope.Response.Status != "ok" {
-		return nil, fmt.Errorf("unable to verify the configured user's current library access")
+		return nil, fmt.Errorf("unable to verify the granted user's current library access")
 	}
 	allowed := map[int]bool{}
 	for _, f := range envelope.Response.Folders.Items {
@@ -38,20 +38,13 @@ func AccessibleLibraries(raw string, granted []int) ([]int, error) {
 	return out, nil
 }
 
-// ResolveUsername uses granted users as the only possible identities. An empty
-// setting is unambiguous only when exactly one unique user has been granted.
-func ResolveUsername(configured string, granted []string) (string, error) {
+// ResolveUsername accepts exactly one unique granted identity.
+func ResolveUsername(granted []string) (string, error) {
 	allowed := map[string]bool{}
 	for _, name := range granted {
 		if name != "" {
 			allowed[name] = true
 		}
-	}
-	if configured != "" {
-		if allowed[configured] {
-			return configured, nil
-		}
-		return "", fmt.Errorf("the selected username is not granted access to this plugin")
 	}
 	if len(allowed) == 1 {
 		for name := range allowed {
@@ -61,5 +54,5 @@ func ResolveUsername(configured string, granted []string) (string, error) {
 	if len(allowed) == 0 {
 		return "", fmt.Errorf("grant access to a Navidrome user in the plugin's User Access settings")
 	}
-	return "", fmt.Errorf("multiple users are granted access; select exactly one in User Access or set the optional username explicitly")
+	return "", fmt.Errorf("multiple users are granted access; select exactly one in User Access and turn off Allow all users")
 }

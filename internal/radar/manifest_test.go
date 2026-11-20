@@ -21,8 +21,13 @@ type uiElement struct {
 // masking in the control's options, independently from validation constraints.
 func TestManifestCredentialControlsRenderWithoutUnknownFormats(t *testing.T) {
 	var m struct {
-		Version string `json:"version"`
-		Config  struct {
+		Version     string `json:"version"`
+		Permissions struct {
+			Library struct {
+				Filesystem bool `json:"filesystem"`
+			} `json:"library"`
+		} `json:"permissions"`
+		Config struct {
 			Schema struct {
 				Properties map[string]struct {
 					Type   string `json:"type"`
@@ -38,6 +43,9 @@ func TestManifestCredentialControlsRenderWithoutUnknownFormats(t *testing.T) {
 	}
 	if err = json.Unmarshal(b, &m); err != nil {
 		t.Fatal(err)
+	}
+	if m.Permissions.Library.Filesystem {
+		t.Fatal("plugin must not request music-library filesystem access")
 	}
 	if m.Version != Version {
 		t.Fatal("manifest and runtime versions differ")
@@ -66,9 +74,14 @@ func TestManifestCredentialControlsRenderWithoutUnknownFormats(t *testing.T) {
 		}
 	}
 	walk(m.Config.UI)
-	for _, label := range []string{"Library", "Releases", "Local files", "Notifications", "Calendar"} {
+	for _, label := range []string{"General", "Releases", "Local files", "Notifications", "Calendar"} {
 		if !labels[label] {
 			t.Fatal("missing settings category", label)
+		}
+	}
+	for _, removed := range []string{"username", "contact", "export_library_id", "include_secondary"} {
+		if _, exists := m.Config.Schema.Properties[removed]; exists {
+			t.Fatal("removed field remains", removed)
 		}
 	}
 	for name, p := range m.Config.Schema.Properties {
@@ -77,6 +90,11 @@ func TestManifestCredentialControlsRenderWithoutUnknownFormats(t *testing.T) {
 		}
 		if _, ok := controls["#/properties/"+name]; !ok {
 			t.Fatal("field is missing from configuration form", name)
+		}
+	}
+	for _, option := range append(append([]ReleaseTypeOption{}, PrimaryReleaseTypes...), SecondaryReleaseTypes...) {
+		if m.Config.Schema.Properties[option.Key].Type != "boolean" {
+			t.Fatal("release selector missing from manifest", option.Key)
 		}
 	}
 	for _, name := range []string{"ntfy_access_token", "caldav_app_password", "google_client_secret", "google_refresh_token"} {

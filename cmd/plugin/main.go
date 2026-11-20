@@ -46,7 +46,6 @@ func str(key, def string) string {
 }
 func config() (radar.Config, error) {
 	c := radar.DefaultConfig()
-	c.Username = str("username", "")
 	c.CalendarNamespace = str("calendar_namespace", "release-radar")
 	var err error
 	c.AheadDays, err = strconv.Atoi(str("ahead_days", "90"))
@@ -57,14 +56,28 @@ func config() (radar.Config, error) {
 	if err != nil {
 		return c, fmt.Errorf("past_days must be an integer")
 	}
-	c.IncludeSingles = str("include_singles", "false") == "true"
-	c.IncludeSecondary = str("include_secondary", "false") == "true"
+	c.PrimaryTypes = nil
+	for _, option := range radar.PrimaryReleaseTypes {
+		fallback := "false"
+		if option.Value == "Album" || option.Value == "EP" {
+			fallback = "true"
+		}
+		if str(option.Key, fallback) == "true" {
+			c.PrimaryTypes = append(c.PrimaryTypes, option.Value)
+		}
+	}
+	c.IncludeStandard = str("include_standard", "true") == "true"
+	for _, option := range radar.SecondaryReleaseTypes {
+		if str(option.Key, "false") == "true" {
+			c.SecondaryTypes = append(c.SecondaryTypes, option.Value)
+		}
+	}
 	c.AutoMatch = str("auto_match", "true") == "true"
-	if err = json.Unmarshal([]byte(str("artist_overrides", "{}")), &c.Overrides); err != nil {
+	if err = json.Unmarshal([]byte(str("artist_overrides", "{}")), &c.Overrides); err != nil || c.Overrides == nil {
 		return c, fmt.Errorf("artist_overrides must be a JSON object of Navidrome ID to MusicBrainz ID")
 	}
 	var excluded []string
-	if err = json.Unmarshal([]byte(str("excluded_artists", "[]")), &excluded); err != nil {
+	if err = json.Unmarshal([]byte(str("excluded_artists", "[]")), &excluded); err != nil || excluded == nil {
 		return c, fmt.Errorf("excluded_artists must be a JSON array of Navidrome IDs")
 	}
 	for _, id := range excluded {
@@ -100,65 +113,35 @@ func (p *plugin) tick() error {
 	}
 	c, configErr := config()
 	ic := integrationConfig(c)
-	exportAllowed := false
 	finish := func(problem error) error {
 		if problem != nil {
 			s.Problem = problem.Error()
 		}
-		if err := radar.Save(dir, s, c, now); err != nil {
-			return err
-		}
-		if !exportAllowed {
-			return nil
-		}
-		exportID, err := strconv.Atoi(str("export_library_id", "0"))
-		if err != nil || exportID < 0 {
-			return fmt.Errorf("export_library_id must be a nonnegative integer")
-		}
-		if exportID > 0 {
-			lib, err := host.Library(int32(exportID))
-			if err != nil {
-				return fmt.Errorf("export library: %w", err)
-			}
-			if lib.MountPoint == "" {
-				return fmt.Errorf("export library filesystem is not mounted")
-			}
-			b, err := radar.Render(s, c, now)
-			if err != nil {
-				return err
-			}
-			if err = radar.ExportReport(lib.MountPoint, b); err != nil {
-				return fmt.Errorf("HTML export failed; grant library write access and check folder permissions: %w", err)
-			}
-			if err = radar.ExportCalendar(lib.MountPoint, radar.CalendarICS(radar.Events(s, c, c.EventNamespace(), now, true), now)); err != nil {
-				return fmt.Errorf("calendar export failed: %w", err)
-			}
-		}
-		return nil
+		return radar.Save(dir, s, c, now)
 	}
+	deny := func(problem error) error { s = radar.State{Schema: 1}; return finish(problem) }
 	if configErr != nil {
 		s = radar.State{Schema: 1}
 		return finish(configErr)
 	}
 	users, err := host.Users()
 	if err != nil {
-		return finish(err)
+		return deny(fmt.Errorf("unable to verify granted user access"))
 	}
 	granted := make([]string, 0, len(users))
 	for _, u := range users {
 		granted = append(granted, u.UserName)
 	}
-	c.Username, err = radar.ResolveUsername(c.Username, granted)
+	c.Username, err = radar.ResolveUsername(granted)
 	if err != nil {
 		s = radar.State{Schema: 1}
 		return finish(err)
 	}
-	// Event IDs and delivery targets must use the resolved account, including
-	// when selection was automatic, so switching modes preserves event identity.
+	// Keep stable event identities tied to the granted Navidrome account.
 	ic = integrationConfig(c)
 	libs, err := host.Libraries()
 	if err != nil {
-		return finish(err)
+		return deny(fmt.Errorf("unable to verify granted library access"))
 	}
 	ids := []int{}
 	for _, l := range libs {
@@ -166,11 +149,11 @@ func (p *plugin) tick() error {
 	}
 	rawFolders, err := host.Subsonic("getMusicFolders?u=" + url.QueryEscape(c.Username))
 	if err != nil {
-		return finish(fmt.Errorf("unable to verify current user library access"))
+		return deny(fmt.Errorf("unable to verify current user library access"))
 	}
 	ids, err = radar.AccessibleLibraries(rawFolders, ids)
 	if err != nil {
-		return finish(err)
+		return deny(err)
 	}
 	scope := fmt.Sprintf("%s|%v", c.Fingerprint(), ids)
 	if s.Scope != scope {
@@ -180,22 +163,6 @@ func (p *plugin) tick() error {
 		s = radar.State{Schema: 1}
 		return finish(fmt.Errorf("assign at least one library shared by the selected user and plugin"))
 	}
-	exportID, parseErr := strconv.Atoi(str("export_library_id", "0"))
-	if parseErr != nil || exportID < 0 || exportID > 2147483647 {
-		return finish(fmt.Errorf("export_library_id must be a nonnegative 32-bit library ID"))
-	}
-	if exportID > 0 {
-		found := false
-		for _, id := range ids {
-			if id == exportID {
-				found = true
-			}
-		}
-		if !found {
-			return finish(fmt.Errorf("export library must be accessible to both the configured user and plugin"))
-		}
-	}
-	exportAllowed = true
 	// Retry discovery failures at most once per minute, not every two seconds.
 	refreshToken := str("refresh_token", "")
 	if s.RefreshToken != refreshToken {
@@ -215,7 +182,7 @@ func (p *plugin) tick() error {
 	}
 	previousProblem := s.Problem
 	s.Problem = ""
-	view := fmt.Sprintf("%d/%d/%t/%t/%s", c.AheadDays, c.PastDays, c.IncludeSingles, c.IncludeSecondary, str("export_library_id", "0")) + ic.Fingerprint()
+	view := fmt.Sprintf("%d/%d/%v/%v/%t", c.AheadDays, c.PastDays, c.PrimaryTypes, c.SecondaryTypes, c.IncludeStandard) + ic.Fingerprint()
 	viewChanged := s.ViewConfig != view
 	s.ViewConfig = view
 	d, loadErr := radar.LoadDeliveries(dir)
@@ -230,7 +197,7 @@ func (p *plugin) tick() error {
 	changed := false
 	if !deliveryChanged {
 		changed = s.Step(func(endpoint string) (radar.Response, error) {
-			ua := "NavidromeReleaseRadar/" + radar.Version + " (" + str("contact", "local Navidrome plugin") + ")"
+			ua := radar.MusicBrainzUserAgent()
 			return send(radar.HTTPRequest{Method: "GET", URL: endpoint, Headers: map[string]string{"User-Agent": ua, "Accept": "application/json"}})
 		}, c, now)
 		if !changed {
@@ -242,6 +209,7 @@ func (p *plugin) tick() error {
 	} else if changed {
 		d.PreferDelivery = true
 	}
+	previousIntegrationProblem := s.IntegrationProblem
 	s.IntegrationProblem = strings.Trim(strings.Join([]string{configurationProblem, d.Status()}, " · "), " ·")
 	if changed || deliveryChanged {
 		if err = radar.SaveDeliveries(dir, d); err != nil {
@@ -250,7 +218,7 @@ func (p *plugin) tick() error {
 	}
 
 	// Avoid rewriting the dashboard every idle tick. Render at least hourly for date windows.
-	if !changed && !deliveryChanged && !viewChanged && previousProblem == "" && s.DiscoveredAt != now.Unix() && now.Unix()-s.RenderedAt < 3600 {
+	if !changed && !deliveryChanged && !viewChanged && previousProblem == "" && previousIntegrationProblem == s.IntegrationProblem && s.DiscoveredAt != now.Unix() && now.Unix()-s.RenderedAt < 3600 {
 		return nil
 	}
 	return finish(nil)

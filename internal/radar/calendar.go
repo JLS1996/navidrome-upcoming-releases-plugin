@@ -32,19 +32,12 @@ func (r Release) SourceURL() string {
 }
 func Events(s State, c Config, namespace string, now time.Time, exactOnly bool) []CalendarEvent {
 	result := []CalendarEvent{}
-	seen := map[string]bool{}
-	for _, entry := range s.Entries {
-		for _, r := range entry.Releases {
-			if !Visible(r, c, now) || !r.ValidID() || (exactOnly && len(r.Date) != 10) {
-				continue
-			}
-			key := r.ID // Release-group identity, not title/date.
-			if seen[key] {
-				continue
-			}
-			seen[key] = true
-			result = append(result, CalendarEvent{Key: key, UID: "rr-" + digest(namespace+"\x00"+key) + "@release-radar", Summary: entry.Artist.Name + " — " + r.Title, Date: r.Date, Description: r.Type + " release. Source dates may change. " + DateLabel(r.Date), URL: r.SourceURL()})
+	for _, r := range visibleReleases(s, c, now) {
+		if exactOnly && len(r.Date) != 10 {
+			continue
 		}
+		key := r.ID
+		result = append(result, CalendarEvent{Key: key, UID: "rr-" + digest(namespace+"\x00"+key) + "@release-radar", Summary: r.ArtistName + " — " + r.Title, Date: r.Date, Description: r.TypeLabel() + " release. Source dates may change. " + DateLabel(r.Date), URL: r.SourceURL()})
 	}
 	sort.Slice(result, func(i, j int) bool { return result[i].UID < result[j].UID })
 	return result
@@ -108,5 +101,12 @@ func FullCycle(s State) bool {
 func CalendarStats(s State, c Config, namespace string, now time.Time) string {
 	all := len(Events(s, c, namespace, now, false))
 	exact := len(Events(s, c, namespace, now, true))
-	return fmt.Sprintf("%d dated events; %d releases with uncertain dates excluded from calendar export", exact, all-exact)
+	eventWord, releaseWord := "events", "releases"
+	if exact == 1 {
+		eventWord = "event"
+	}
+	if all-exact == 1 {
+		releaseWord = "release"
+	}
+	return fmt.Sprintf("%d dated %s; %d %s with uncertain dates excluded from calendar export", exact, eventWord, all-exact, releaseWord)
 }

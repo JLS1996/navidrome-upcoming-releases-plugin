@@ -4,11 +4,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 )
 
-const Version = "0.2.4"
+const Version = "0.3.0"
+
+func MusicBrainzUserAgent() string {
+	return "NavidromeReleaseRadar/" + Version + " (https://github.com/JLS1996/navidrome-upcoming-releases-plugin)"
+}
 
 var uuidRE = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
 
@@ -58,15 +63,31 @@ type Config struct {
 	Username          string
 	AheadDays         int
 	PastDays          int
-	IncludeSingles    bool
-	IncludeSecondary  bool
+	PrimaryTypes      []string
+	SecondaryTypes    []string
+	IncludeStandard   bool
 	AutoMatch         bool
 	Overrides         map[string]string
 	Exclusions        map[string]bool
 }
 
 func DefaultConfig() Config {
-	return Config{CalendarNamespace: "release-radar", AheadDays: 90, PastDays: 30, AutoMatch: true, Overrides: map[string]string{}, Exclusions: map[string]bool{}}
+	return Config{CalendarNamespace: "release-radar", AheadDays: 90, PastDays: 30, AutoMatch: true, PrimaryTypes: []string{"Album", "EP"}, IncludeStandard: true, Overrides: map[string]string{}, Exclusions: map[string]bool{}}
+}
+
+// MusicBrainz release-group types; Live is a secondary type, not a primary one.
+type ReleaseTypeOption struct{ Key, Value string }
+
+var PrimaryReleaseTypes = []ReleaseTypeOption{{"include_albums", "Album"}, {"include_eps", "EP"}, {"include_singles", "Single"}, {"include_broadcasts", "Broadcast"}, {"include_other", "Other"}}
+var SecondaryReleaseTypes = []ReleaseTypeOption{{"include_live", "Live"}, {"include_compilations", "Compilation"}, {"include_remixes", "Remix"}, {"include_soundtracks", "Soundtrack"}, {"include_demos", "Demo"}, {"include_mixtapes", "Mixtape/Street"}, {"include_dj_mixes", "DJ-mix"}, {"include_spokenword", "Spokenword"}, {"include_interviews", "Interview"}, {"include_audiobooks", "Audiobook"}, {"include_audio_drama", "Audio drama"}, {"include_field_recordings", "Field recording"}}
+
+func contains(values []string, value string) bool {
+	for _, v := range values {
+		if v == value {
+			return true
+		}
+	}
+	return false
 }
 func (c Config) Validate() error {
 	if c.AheadDays < 1 || c.AheadDays > 730 || c.PastDays < 0 || c.PastDays > 365 {
@@ -219,17 +240,92 @@ func DateLabel(s string) string {
 		return t.Format("2 January 2006")
 	}
 }
+func (r Release) PrimaryType() string {
+	if r.Type == "" {
+		return "Other"
+	}
+	return r.Type
+}
+func (r Release) TypeLabel() string {
+	label := r.PrimaryType()
+	if len(r.Secondary) > 0 {
+		label += " · " + strings.Join(r.Secondary, ", ")
+	}
+	return label
+}
+
+type reportRelease struct {
+	Release
+	ArtistName, CheckedAt string
+}
+
+// Shared release groups appear once, with stable combined artist credits in
+// HTML, calendar exports and notifications. Prefer the newest committed metadata.
+func visibleReleases(s State, c Config, now time.Time) []reportRelease {
+	groups := map[string]reportRelease{}
+	credits := map[string]map[string]bool{}
+	for _, e := range s.Entries {
+		for _, r := range e.Releases {
+			if !r.ValidID() {
+				continue
+			}
+			previous, exists := groups[r.ID]
+			if !exists || e.CheckedAt > previous.CheckedAt {
+				groups[r.ID] = reportRelease{Release: r, CheckedAt: e.CheckedAt}
+			}
+			if credits[r.ID] == nil {
+				credits[r.ID] = map[string]bool{}
+			}
+			credits[r.ID][e.Artist.Name] = true
+		}
+	}
+	ids := []string{}
+	for id := range groups {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	out := []reportRelease{}
+	for _, id := range ids {
+		r := groups[id]
+		if !Visible(r.Release, c, now) {
+			continue
+		}
+		names := []string{}
+		for name := range credits[id] {
+			names = append(names, name)
+		}
+		sort.Strings(names)
+		r.ArtistName = strings.Join(names, " / ")
+		out = append(out, r)
+	}
+	return out
+}
 func Visible(r Release, c Config, now time.Time) bool {
-	if r.Type != "Album" && r.Type != "EP" && !(c.IncludeSingles && r.Type == "Single") {
+	primary := r.PrimaryType()
+	if !contains(c.PrimaryTypes, primary) {
 		return false
 	}
-	if !c.IncludeSecondary && len(r.Secondary) > 0 {
-		return false
+	if len(r.Secondary) == 0 {
+		if !c.IncludeStandard {
+			return false
+		}
+	} else {
+		allowed := false
+		for _, secondary := range r.Secondary {
+			if contains(c.SecondaryTypes, secondary) {
+				allowed = true
+				break
+			}
+		}
+		if !allowed {
+			return false
+		}
 	}
 	start, end, ok := DateInterval(r.Date)
 	if !ok {
 		return false
 	}
+	now = now.UTC()
 	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 	return !end.Before(today.AddDate(0, 0, -c.PastDays)) && !start.After(today.AddDate(0, 0, c.AheadDays))
 }

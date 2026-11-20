@@ -78,12 +78,19 @@ NAVIDROME_BIN=/path/to/navidrome python3 scripts/test_config_form.py
 
 It reproduces the old unsupported-format error, then checks that the fixed schema
 renders, checks categorized settings and field spacing at desktop and narrow
-viewport sizes, masks credential inputs and saves/reloads with automatic user
+viewport sizes, masks credential inputs and saves/reloads release-type choices and grant-based user
 selection without enabling any external integration. The native manifest test runs in CI to prevent putting
 UI-only password formats back into JSON Schema.
 
-The Google OAuth helper needs real user consent for a final live-account check.
-Neither hosted credentials nor personal data should be used in automated tests.
+To verify the public Northlane lookup through the real filtering and export code:
+
+```sh
+RADAR_LIVE_MUSICBRAINZ=1 go test ./internal/radar -run TestLiveNorthlaneLookup -count=1 -v
+```
+
+This optional network test checks MusicBrainz's Anemoia metadata against a fixed
+November 2026 date window. It is excluded from ordinary tests and CI. Never use
+personal accounts or credentials in automated integration tests.
 
 ## Public-source and release checks
 
@@ -92,5 +99,5 @@ Exclude runtime state, logs, personal config and credential files. Run
 `scripts/check_public.py` on a clean publish directory before pushing. Source
 bundles include only whitelisted project paths; raw runtime reports are excluded.
 
-A public repository CI run builds and tests the package. It does not deploy a
-website, enable GitHub Pages, connect calendar accounts, or publish notifications.
+CI runs native tests, validates public files, builds the WASM plugin and uploads the
+plugin package as a build artifact.

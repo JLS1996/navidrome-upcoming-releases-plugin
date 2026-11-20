@@ -351,7 +351,7 @@ func (d *DeliveryState) caldavOp(uid string, e CalendarEvent, wanted bool, r *Re
 			return
 		}
 	} else {
-		if resp.Status == 412 || resp.Status == 409 {
+		if resp.Status == 412 || resp.Status == 409 || (wanted && resp.Status == 404) {
 			r.Phase = "get"
 			return
 		}
@@ -409,7 +409,7 @@ func (d *DeliveryState) googleOp(uid string, e CalendarEvent, wanted bool, r *Re
 		return
 	}
 	if phase == "get" {
-		if resp.Status == 404 {
+		if resp.Status == 404 || resp.Status == 410 {
 			r.Present = false
 			r.ETag = ""
 			if !wanted {
@@ -450,7 +450,7 @@ func (d *DeliveryState) googleOp(uid string, e CalendarEvent, wanted bool, r *Re
 			return
 		}
 	} else {
-		if resp.Status == 409 || resp.Status == 412 {
+		if resp.Status == 409 || resp.Status == 412 || (wanted && (resp.Status == 404 || resp.Status == 410)) {
 			r.Phase = "get"
 			return
 		}

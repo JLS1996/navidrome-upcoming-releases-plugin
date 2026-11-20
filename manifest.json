@@ -1,7 +1,7 @@
 {
   "name": "Release Radar",
   "author": "Release Radar contributors",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "description": "Upcoming music releases with an offline list/calendar dashboard, .ics export, optional ntfy alerts and CalDAV or Google Calendar sync.",
   "permissions": {
     "storage": {
@@ -14,8 +14,7 @@
       "reason": "Read library artists as the user selected from granted access"
     },
     "library": {
-      "reason": "Read assigned library metadata and optionally export HTML into a library when administrator write access is granted",
-      "filesystem": true
+      "reason": "Read assigned library metadata; reports stay in private plugin storage"
     },
     "subsonicapi": {
       "reason": "Read artists and MusicBrainz IDs internally"
@@ -36,17 +35,6 @@
     "schema": {
       "type": "object",
       "properties": {
-        "username": {
-          "type": "string",
-          "title": "Navidrome username",
-          "description": "Optional: leave blank to use the only user granted access. With multiple granted users, choose exactly one in User Access or enter a granted username here.",
-          "default": ""
-        },
-        "contact": {
-          "type": "string",
-          "title": "MusicBrainz contact",
-          "description": "Contact email or project URL used to identify metadata requests. Not included in the report."
-        },
         "ahead_days": {
           "type": "integer",
           "title": "Days ahead",
@@ -63,14 +51,8 @@
         },
         "include_singles": {
           "type": "boolean",
-          "title": "Include singles",
+          "title": "Singles",
           "default": false
-        },
-        "include_secondary": {
-          "type": "boolean",
-          "title": "Include live and compilation releases",
-          "default": false,
-          "description": "Also includes other secondary release types such as remixes and soundtracks."
         },
         "auto_match": {
           "type": "boolean",
@@ -89,13 +71,6 @@
           "title": "Excluded artist IDs",
           "default": "[]",
           "description": "JSON array of Navidrome artist IDs to skip."
-        },
-        "export_library_id": {
-          "type": "integer",
-          "title": "Export library ID",
-          "default": 0,
-          "minimum": 0,
-          "description": "0 keeps files in private plugin storage. Another ID exports to that library root and requires write access."
         },
         "refresh_token": {
           "type": "string",
@@ -181,6 +156,92 @@
           "title": "OAuth refresh token",
           "default": "",
           "description": "Obtained using scripts/google_authorize.py. Never included in HTML or calendar files."
+        },
+        "include_albums": {
+          "type": "boolean",
+          "title": "Albums",
+          "default": true
+        },
+        "include_eps": {
+          "type": "boolean",
+          "title": "EPs",
+          "default": true
+        },
+        "include_broadcasts": {
+          "type": "boolean",
+          "title": "Broadcasts",
+          "default": false
+        },
+        "include_other": {
+          "type": "boolean",
+          "title": "Other or unspecified types",
+          "default": false
+        },
+        "include_standard": {
+          "type": "boolean",
+          "title": "Standard releases",
+          "default": true,
+          "description": "Include releases with no secondary tag, such as studio albums and regular singles."
+        },
+        "include_live": {
+          "type": "boolean",
+          "title": "Live",
+          "default": false
+        },
+        "include_compilations": {
+          "type": "boolean",
+          "title": "Compilations",
+          "default": false
+        },
+        "include_remixes": {
+          "type": "boolean",
+          "title": "Remixes",
+          "default": false
+        },
+        "include_soundtracks": {
+          "type": "boolean",
+          "title": "Soundtracks",
+          "default": false
+        },
+        "include_demos": {
+          "type": "boolean",
+          "title": "Demos",
+          "default": false
+        },
+        "include_mixtapes": {
+          "type": "boolean",
+          "title": "Mixtapes / street releases",
+          "default": false
+        },
+        "include_dj_mixes": {
+          "type": "boolean",
+          "title": "DJ mixes",
+          "default": false
+        },
+        "include_spokenword": {
+          "type": "boolean",
+          "title": "Spoken word",
+          "default": false
+        },
+        "include_interviews": {
+          "type": "boolean",
+          "title": "Interviews",
+          "default": false
+        },
+        "include_audiobooks": {
+          "type": "boolean",
+          "title": "Audiobooks",
+          "default": false
+        },
+        "include_audio_drama": {
+          "type": "boolean",
+          "title": "Audio drama",
+          "default": false
+        },
+        "include_field_recordings": {
+          "type": "boolean",
+          "title": "Field recordings",
+          "default": false
         }
       }
     },
@@ -190,23 +251,15 @@
       "elements": [
         {
           "type": "Category",
-          "label": "Library",
+          "label": "General",
           "elements": [
             {
               "type": "Group",
-              "label": "Access and identification",
+              "label": "Library access",
               "elements": [
                 {
                   "type": "Label",
-                  "text": "Grant one user in User Access to select it automatically. Leave the username blank."
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/username"
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/contact"
+                  "text": "Grant exactly one user and the intended libraries in the permission cards below. MusicBrainz lookups need no account or personal email."
                 }
               ]
             },
@@ -233,6 +286,16 @@
                   }
                 }
               ]
+            },
+            {
+              "type": "Group",
+              "label": "Manual refresh",
+              "elements": [
+                {
+                  "type": "Control",
+                  "scope": "#/properties/refresh_token"
+                }
+              ]
             }
           ]
         },
@@ -242,7 +305,7 @@
           "elements": [
             {
               "type": "Group",
-              "label": "Release window and types",
+              "label": "Date window",
               "elements": [
                 {
                   "type": "Control",
@@ -251,6 +314,20 @@
                 {
                   "type": "Control",
                   "scope": "#/properties/past_days"
+                }
+              ]
+            },
+            {
+              "type": "Group",
+              "label": "Release formats",
+              "elements": [
+                {
+                  "type": "Control",
+                  "scope": "#/properties/include_albums"
+                },
+                {
+                  "type": "Control",
+                  "scope": "#/properties/include_eps"
                 },
                 {
                   "type": "Control",
@@ -258,7 +335,79 @@
                 },
                 {
                   "type": "Control",
-                  "scope": "#/properties/include_secondary"
+                  "scope": "#/properties/include_broadcasts"
+                },
+                {
+                  "type": "Control",
+                  "scope": "#/properties/include_other"
+                }
+              ]
+            },
+            {
+              "type": "Group",
+              "label": "Standard and special releases",
+              "elements": [
+                {
+                  "type": "Label",
+                  "text": "Choose release formats above. For releases with secondary tags, any selected tag below is enough to include the release."
+                },
+                {
+                  "type": "Control",
+                  "scope": "#/properties/include_standard"
+                },
+                {
+                  "type": "Control",
+                  "scope": "#/properties/include_live"
+                },
+                {
+                  "type": "Control",
+                  "scope": "#/properties/include_compilations"
+                },
+                {
+                  "type": "Control",
+                  "scope": "#/properties/include_remixes"
+                },
+                {
+                  "type": "Control",
+                  "scope": "#/properties/include_soundtracks"
+                },
+                {
+                  "type": "Control",
+                  "scope": "#/properties/include_demos"
+                },
+                {
+                  "type": "Control",
+                  "scope": "#/properties/include_mixtapes"
+                },
+                {
+                  "type": "Control",
+                  "scope": "#/properties/include_dj_mixes"
+                }
+              ]
+            },
+            {
+              "type": "Group",
+              "label": "Spoken and other recordings",
+              "elements": [
+                {
+                  "type": "Control",
+                  "scope": "#/properties/include_spokenword"
+                },
+                {
+                  "type": "Control",
+                  "scope": "#/properties/include_interviews"
+                },
+                {
+                  "type": "Control",
+                  "scope": "#/properties/include_audiobooks"
+                },
+                {
+                  "type": "Control",
+                  "scope": "#/properties/include_audio_drama"
+                },
+                {
+                  "type": "Control",
+                  "scope": "#/properties/include_field_recordings"
                 }
               ]
             }
@@ -270,25 +419,19 @@
           "elements": [
             {
               "type": "Group",
-              "label": "Local report export",
+              "label": "Generated files",
               "elements": [
                 {
                   "type": "Label",
-                  "text": "Files remain local. This plugin does not expose a web download endpoint."
+                  "text": "Reports are saved in Navidrome\u2019s data folder: plugins/release-radar/storage/"
                 },
                 {
-                  "type": "Control",
-                  "scope": "#/properties/export_library_id"
-                }
-              ]
-            },
-            {
-              "type": "Group",
-              "label": "Manual refresh",
-              "elements": [
+                  "type": "Label",
+                  "text": "Open upcoming-releases.html locally for the list and month calendar. Import music-releases.ics for dated calendar events. Copy the HTML again after updates if viewing it on another device."
+                },
                 {
-                  "type": "Control",
-                  "scope": "#/properties/refresh_token"
+                  "type": "Label",
+                  "text": "state.json and integrations.json are private working files. Keep them out of shared folders. Reports are written only to plugin storage; the plugin does not serve files over the web."
                 }
               ]
             }

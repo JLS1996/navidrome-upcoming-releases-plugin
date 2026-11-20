@@ -27,6 +27,9 @@ func Load(dir string) (State, error) {
 	if s.Schema != 1 {
 		return s, fmt.Errorf("unsupported state schema %d", s.Schema)
 	}
+	if s.MusicBrainzFailures < 0 || s.MusicBrainzFailures > 7 || s.NextHTTP < 0 {
+		return s, fmt.Errorf("state.json contains invalid service retry metadata")
+	}
 	for i := range s.Entries {
 		e := &s.Entries[i]
 		// Recover entries written by versions that exhausted artist retries
@@ -53,6 +56,9 @@ func Load(dir string) (State, error) {
 		default:
 			return s, fmt.Errorf("state.json contains an invalid artist phase")
 		}
+		if e.Failures < 0 || e.Failures > 8 || e.RetryAt < 0 {
+			return s, fmt.Errorf("state.json contains invalid artist retry metadata")
+		}
 		if e.Offset < 0 || e.Offset > 50000 {
 			return s, fmt.Errorf("state.json contains an invalid pagination offset")
 		}
@@ -60,9 +66,6 @@ func Load(dir string) (State, error) {
 	return s, nil
 }
 func AtomicWrite(dir, name string, b []byte) error { return atomicWrite(dir, name, b, 0600) }
-func ExportReport(dir string, b []byte) error {
-	return atomicWrite(dir, "upcoming-releases.html", b, 0644)
-}
 func atomicWrite(dir, name string, b []byte, mode os.FileMode) error {
 	// Fixed filenames only: configuration and metadata never become filesystem paths.
 	if name != "state.json" && name != "upcoming-releases.html" && name != "music-releases.ics" && name != "integrations.json" {
@@ -108,9 +111,6 @@ func Save(dir string, s State, c Config, now time.Time) error {
 	return AtomicWrite(dir, "state.json", b)
 }
 
-func ExportCalendar(dir string, b []byte) error {
-	return atomicWrite(dir, "music-releases.ics", b, 0644)
-}
 func LoadDeliveries(dir string) (DeliveryState, error) {
 	d := DeliveryState{Schema: 1}
 	b, err := os.ReadFile(filepath.Join(dir, "integrations.json"))

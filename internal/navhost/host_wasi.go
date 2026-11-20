@@ -26,9 +26,6 @@ func usersCall(uint64) uint64
 //go:wasmimport extism:host/user library_getalllibraries
 func librariesCall(uint64) uint64
 
-//go:wasmimport extism:host/user library_getlibrary
-func libraryCall(uint64) uint64
-
 //go:wasmimport extism:host/user scheduler_schedulerecurring
 func scheduleCall(uint64) uint64
 
@@ -45,7 +42,6 @@ const (
 	opStorage
 	opUsers
 	opLibraries
-	opLibrary
 	opSchedule
 	opSubsonic
 	opHTTP
@@ -68,8 +64,6 @@ func exchange(op operation, input, output any) error {
 		offset = usersCall(block.Offset())
 	case opLibraries:
 		offset = librariesCall(block.Offset())
-	case opLibrary:
-		offset = libraryCall(block.Offset())
 	case opSchedule:
 		offset = scheduleCall(block.Offset())
 	case opSubsonic:
@@ -122,15 +116,11 @@ type User struct {
 	UserName string `json:"userName"`
 }
 type LibraryInfo struct {
-	ID         int32  `json:"id"`
-	MountPoint string `json:"mountPoint"`
+	ID int32 `json:"id"`
 }
 
 func Users() ([]User, error)            { return result[[]User](opUsers, struct{}{}) }
 func Libraries() ([]LibraryInfo, error) { return result[[]LibraryInfo](opLibraries, struct{}{}) }
-func Library(id int32) (LibraryInfo, error) {
-	return result[LibraryInfo](opLibrary, map[string]int32{"id": id})
-}
 func Schedule(cron, payload, id string) error {
 	var reply struct {
 		Error string `json:"error"`

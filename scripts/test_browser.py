@@ -14,12 +14,15 @@ with sync_playwright() as p:
  assert page.locator('.release').count()==3
  assert page.locator('.release:visible').count()==3
  assert page.locator('h1').inner_text()=='Your music.\nSomething to look forward to.'
+ page.locator('#type').select_option('Live');assert page.locator('.release:visible').count()==1
+ assert 'Live' in page.locator('.release:visible .tag').inner_text()
+ page.locator('#type').select_option('')
  page.locator('#search').fill('glass orchard');assert page.locator('.release:visible').count()==1
  page.locator('#search').fill('not in this library');assert page.locator('.release:visible').count()==0;assert page.locator('#empty').is_visible()
  page.locator('#search').fill('');page.locator('#type').select_option('EP');assert page.locator('.release:visible').count()==1
  page.locator('#period').select_option('Upcoming');assert page.locator('.release:visible').count()==0
  page.locator('#type').select_option('');page.locator('#period').select_option('Date uncertain');assert page.locator('.release:visible').count()==1
- page.locator('#period').select_option('');page.get_by_text('1 artists need attention',exact=True).click();assert page.get_by_text('Multiple artists share this name.',exact=False).is_visible()
+ page.locator('#period').select_option('');page.get_by_text('1 artist needs attention',exact=True).click();assert page.get_by_text('Multiple artists share this name.',exact=False).is_visible()
  assert not page.evaluate('document.documentElement.scrollWidth > innerWidth')
  # Calendar is entirely local and keeps uncertain dates off the day grid.
  page.locator('#calendar-view').click();assert page.locator('#calendar').is_visible()
@@ -60,6 +63,7 @@ with sync_playwright() as p:
  mobile.evaluate("window.fixtureShared=[];Object.defineProperty(navigator,'canShare',{configurable:true,value:()=>true});Object.defineProperty(navigator,'share',{configurable:true,value:async(d)=>{window.fixtureShared.push({name:d.files[0].name,text:await d.files[0].text()})}})")
  mobile.set_content((root/'dist/preview.html').read_text())
  assert mobile.locator('#calendar-share').is_visible()
+ assert not mobile.locator('#calendar-download').is_visible()
  mobile.locator('#calendar-share').click()
  mobile.wait_for_function('window.fixtureShared.length===1')
  shared=mobile.evaluate('window.fixtureShared[0]')
@@ -68,9 +72,6 @@ with sync_playwright() as p:
  mobile.locator('#calendar-share').click()
  assert mobile.locator('#calendar-text').is_visible()
  assert 'Sharing is unavailable' in mobile.locator('#download-status').inner_text()
- with mobile.expect_download() as download:
-  mobile.locator('#calendar-download').click()
- assert pathlib.Path(download.value.path()).read_bytes()==data
  mobile.close()
  assert not errors,errors
  assert not [u for u in requests if u.startswith(('http:','https:'))],requests

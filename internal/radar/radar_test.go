@@ -209,7 +209,7 @@ func TestMissingStateCanBeSavedBeforeConfiguration(t *testing.T) {
 		t.Fatal(err)
 	}
 }
-func TestExportNeverFollowsTemporarySymlinks(t *testing.T) {
+func TestStorageWriteNeverFollowsTemporarySymlinks(t *testing.T) {
 	dir := t.TempDir()
 	music := filepath.Join(dir, "precious.flac")
 	os.WriteFile(music, []byte("keep audio untouched"), 0600)
@@ -217,7 +217,7 @@ func TestExportNeverFollowsTemporarySymlinks(t *testing.T) {
 	if err := os.Symlink(music, tmp); err != nil {
 		t.Fatal(err)
 	}
-	if err := ExportReport(dir, []byte("<html>report</html>")); err != nil {
+	if err := AtomicWrite(dir, "upcoming-releases.html", []byte("<html>report</html>")); err != nil {
 		t.Fatal(err)
 	}
 	b, _ := os.ReadFile(music)
@@ -279,29 +279,27 @@ func TestVerifiedEmptyLibraryIsNotAnAuthorizationFailure(t *testing.T) {
 }
 func TestUsernameComesOnlyFromGrantedAccess(t *testing.T) {
 	for _, tc := range []struct {
-		name, configured string
-		granted          []string
-		want             string
-		fail             bool
+		name    string
+		granted []string
+		want    string
+		fail    bool
 	}{
-		{"single automatic", "", []string{"reader"}, "reader", false},
-		{"duplicate grant", "", []string{"reader", "reader"}, "reader", false},
-		{"no grants", "", nil, "", true},
-		{"ambiguous", "", []string{"admin", "reader"}, "", true},
-		{"explicit granted", "reader", []string{"admin", "reader"}, "reader", false},
-		{"explicit revoked", "reader", []string{"admin"}, "", true},
-		{"explicit missing grants", "reader", nil, "", true},
+		{"single", []string{"reader"}, "reader", false},
+		{"duplicates", []string{"reader", "reader"}, "reader", false},
+		{"empty grant ignored", []string{"", "reader"}, "reader", false},
+		{"no grants", nil, "", true},
+		{"ambiguous", []string{"admin", "reader"}, "", true},
+		{"current grant", []string{"admin"}, "admin", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := ResolveUsername(tc.configured, tc.granted)
+			got, err := ResolveUsername(tc.granted)
 			if (err != nil) != tc.fail || got != tc.want {
 				t.Fatalf("selection %q, error %v", got, err)
 			}
 		})
 	}
-	c := DefaultConfig()
-	if err := c.Validate(); err != nil {
-		t.Fatal("blank username must be valid before grants are resolved", err)
+	if err := DefaultConfig().Validate(); err != nil {
+		t.Fatal("configuration must validate before grants are resolved", err)
 	}
 }
 

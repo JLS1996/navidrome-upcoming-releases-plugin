@@ -69,6 +69,9 @@ func (s *State) Step(fetch Fetch, c Config, now time.Time) bool {
 		} else {
 			e.Failures = 0
 			e.RetryAt = 0
+			if e.Phase != "unresolved" {
+				e.Problem = ""
+			}
 		}
 		return true
 	}
@@ -81,14 +84,14 @@ func transientStatus(status int) bool {
 	return status == 408 || status == 429 || (status >= 500 && status <= 599)
 }
 func (s *State) pauseMusicBrainz(message string, cursor int, now time.Time, delay int64) {
-	s.MusicBrainzFailures = min(max(s.MusicBrainzFailures, 0)+1, 7)
+	s.MusicBrainzFailures = min(max(s.MusicBrainzFailures, 0), 6) + 1
 	backoff := int64(30) << (s.MusicBrainzFailures - 1)
 	s.NextHTTP = now.Unix() + max(backoff, delay)
 	s.Cursor = cursor
 	s.MusicBrainzProblem = message
 }
 func (s *State) fail(e *Entry, message string, now time.Time, delay int64) {
-	e.Failures++
+	e.Failures = min(max(e.Failures, 0), 8) + 1
 	backoff := int64(30) * (1 << min(e.Failures-1, 8))
 	if delay > backoff {
 		backoff = delay
@@ -115,7 +118,7 @@ func RetryDelay(headers map[string]string, now time.Time) int64 {
 }
 func (e *Entry) match(data []byte) error {
 	var result struct {
-		Count   int `json:"count"`
+		Count   *int `json:"count"`
 		Artists []struct {
 			ID    string `json:"id"`
 			Name  string `json:"name"`
@@ -125,6 +128,9 @@ func (e *Entry) match(data []byte) error {
 	if err := json.Unmarshal(data, &result); err != nil {
 		return fmt.Errorf("invalid artist search response: %w", err)
 	}
+	if result.Count == nil || *result.Count < len(result.Artists) {
+		return fmt.Errorf("invalid artist search pagination")
+	}
 	matches := []string{}
 	for _, a := range result.Artists {
 		if a.Score == 100 && normalize(a.Name) == normalize(e.Artist.Name) && ValidMBID(a.ID) {
@@ -132,7 +138,7 @@ func (e *Entry) match(data []byte) error {
 		}
 	}
 	// A name alone can never establish identity perfectly. Overrides always win.
-	if len(matches) != 1 || result.Count > len(result.Artists) {
+	if len(matches) != 1 || *result.Count > len(result.Artists) {
 		e.Phase = "unresolved"
 		e.Problem = "Artist match is missing or ambiguous; add an artist ID override."
 		return nil
@@ -151,7 +157,7 @@ func (e *Entry) page(data []byte, now time.Time) error {
 	if err := json.Unmarshal(data, &result); err != nil {
 		return fmt.Errorf("invalid release response: %w", err)
 	}
-	if result.Count == nil || result.Offset == nil || *result.Offset != e.Offset || *result.Count < 0 {
+	if result.Count == nil || result.Offset == nil || *result.Offset != e.Offset || *result.Count < 0 || *result.Count > 50000 || e.Offset+len(result.Groups) > *result.Count || len(result.Groups) > 100 {
 		return fmt.Errorf("release pagination metadata missing or inconsistent")
 	}
 	if len(result.Groups) == 0 && e.Offset < *result.Count {

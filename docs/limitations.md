@@ -1,30 +1,28 @@
 # Reliability and limitations
 
-- Metadata and integrations share each callback: at most one external request, with a 6-second HTTP timeout,
-  keeping work below Navidrome's 30-second plugin-call limit. The two-second
-  scheduler tick is idle when no work is due; the persisted interval gates HTTP.
-- Progress, offsets, delivery acknowledgements and prior successful results survive reloads and server
-  restarts. A replacement snapshot commits only after every page succeeds.
-- 429/503 responses pause all artists. Retry-After and exponential backoff are
-  respected (Retry-After capped at one day); after five consecutive failures an
-  artist waits for the next discovery refresh.
-- HTML, calendar and private state updates use temporary files plus rename. Temporary files are created
-  exclusively to avoid following pre-existing temporary-file symlinks. These
-  updates are individually atomic, not an atomic transaction across all files or external services.
-- Incomplete dates retain their precision. A year/month overlapping the window is
-  shown as uncertain, never as an invented exact day.
-- Local-day comparisons use UTC. A file already open in a browser does not
-  automatically refresh or change its snapshot at midnight.
-- No releases displayed means "none known in these filters," not "none announced
-  anywhere." MusicBrainz coverage depends on contributors.
-- Before every callback uses cached data, plugin library grants are intersected with
-  the selected user's current library access. Permission changes invalidate the cache. Report metadata contains listening-library information; share the
-  HTML only with intended readers.
-- Corrupt/unknown state or integration state is not silently discarded. Preserve `state.json`, disable
-  the plugin, move the damaged file aside, then re-enable to rebuild. Check
-  Navidrome logs for storage, config, permission or export errors.
-- Metadata accepts only HTTP 200 JSON; integrations check their protocol-specific status codes. Redirects are disabled. This avoids
-  following a misconfigured endpoint into a login page or another provider.
-- Cached catalogs are currently kept in one JSON state file. Very large libraries
-  may warrant sharded state after measurement; multi-million-track scaling has
-  not been claimed or tested.
+- MusicBrainz is community-maintained. A missing result means no matching metadata
+  is known in the selected window, not that an artist has announced nothing.
+- Dates may change. Year/month-only dates appear separately and are excluded from
+  dated calendar exports.
+- Lookups and integrations share scheduler callbacks, with at most one external
+  request per callback and a six-second timeout. Busy services can delay completion.
+- Temporary network and service failures retry automatically with persistent
+  backoff. Invalid metadata or non-transient lookup errors are reported per artist;
+  after five failed attempts, those artists wait for the next check cycle.
+- Reports use UTC and are static snapshots. An open file does not refresh itself
+  at midnight. Refresh the file, or copy a new version from plugin storage.
+- File updates use temporary files and atomic rename. Updating HTML, calendar and
+  state is not a single transaction; a crash may leave files from adjacent updates.
+- Notifications use persistent acknowledgements. A crash after delivery but before
+  saving the acknowledgement can send a duplicate.
+- Calendar sync uses stable event IDs, ownership checks and ETags. Use a dedicated
+  music calendar. Changing accounts or destinations leaves old events in place.
+- Browser support for downloading or sharing local files varies. Use calendar text
+  or copy the generated `.ics` directly if your browser cannot save it.
+- Catalogs are stored in one JSON file. Very large libraries require more memory
+  and take longer to scan.
+
+For a corrupt or unsupported state file, disable the plugin and preserve the file
+before moving it aside to rebuild. Check Navidrome's logs for configuration,
+permission and storage errors. Never share credentials or personal state in a
+public issue.
