@@ -275,3 +275,30 @@ func TestVerifiedEmptyLibraryIsNotAnAuthorizationFailure(t *testing.T) {
 		t.Fatal("permission error became an empty success")
 	}
 }
+func TestUsernameComesOnlyFromGrantedAccess(t *testing.T) {
+	for _, tc := range []struct {
+		name, configured string
+		granted          []string
+		want             string
+		fail             bool
+	}{
+		{"single automatic", "", []string{"reader"}, "reader", false},
+		{"duplicate grant", "", []string{"reader", "reader"}, "reader", false},
+		{"no grants", "", nil, "", true},
+		{"ambiguous", "", []string{"admin", "reader"}, "", true},
+		{"explicit granted", "reader", []string{"admin", "reader"}, "reader", false},
+		{"explicit revoked", "reader", []string{"admin"}, "", true},
+		{"explicit missing grants", "reader", nil, "", true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := ResolveUsername(tc.configured, tc.granted)
+			if (err != nil) != tc.fail || got != tc.want {
+				t.Fatalf("selection %q, error %v", got, err)
+			}
+		})
+	}
+	c := DefaultConfig()
+	if err := c.Validate(); err != nil {
+		t.Fatal("blank username must be valid before grants are resolved", err)
+	}
+}

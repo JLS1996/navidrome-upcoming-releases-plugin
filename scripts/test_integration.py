@@ -113,7 +113,7 @@ def update(**kwargs):return call('/api/plugin/release-radar','PUT',kwargs)
 def state():return json.loads(statefile.read_text())
 def completed():
  s=state();return s if len(s['entries'])==1 and s['entries'][0]['phase']=='done' else None
-common={'username':'fixture-admin','auto_match':False,'export_library_id':1,'ntfy_server':'https://ntfy.sh/ntfy','ntfy_topic':'fixture-topic','ntfy_access_token':'fixture-ntfy-secret','calendar_provider':'caldav','caldav_calendar_url':'https://caldav.icloud.com/caldav/','caldav_username':'fixture-user','caldav_app_password':'fixture-app-password'}
+common={'username':'','auto_match':False,'export_library_id':1,'ntfy_server':'https://ntfy.sh/ntfy','ntfy_topic':'fixture-topic','ntfy_access_token':'fixture-ntfy-secret','calendar_provider':'caldav','caldav_calendar_url':'https://caldav.icloud.com/caldav/','caldav_username':'fixture-user','caldav_app_password':'fixture-app-password'}
 def settings(**changes):common.update(changes);return json.dumps(common)
 def deliveries():return json.loads((storage/'integrations.json').read_text())
 def owned_caldav():return {k:v for k,v in caldav.items() if '/rr-' in k}
@@ -168,7 +168,9 @@ try:
  empty=call('/api/library','POST',{'name':'Empty fixture library','path':str(base/'empty-library')})
  reader=call('/api/user','POST',{'userName':'fixture-reader','name':'Fixture reader','password':secrets.token_urlsafe(32),'isAdmin':False})
  call('/api/user/'+reader['id']+'/library','PUT',{'libraryIds':[1]})
- update(config=settings(username='fixture-reader',ahead_days=90,export_library_id=0,calendar_provider='none',ntfy_topic=''))
+ wait_for(lambda:'multiple users' in state().get('problem',''))
+ assert not state().get('entries'),'ambiguous grants kept cached artist data'
+ update(config=settings(username='',ahead_days=90,export_library_id=0,calendar_provider='none',ntfy_topic=''),allUsers=False,users=json.dumps([reader['id']]))
  wait_for(completed)
  before_user_revoke=len(requests)
  call('/api/user/'+reader['id']+'/library','PUT',{'libraryIds':[int(empty['id'])]})
@@ -180,7 +182,7 @@ try:
  wait_for(lambda:call('/api/plugin/release-radar').get('enabled') is False)
  before_revoked=len(requests);time.sleep(3);assert len(requests)==before_revoked,'requests continued after revocation'
  # Navidrome disables the runtime before it can clear old disk snapshots.
- results={'navidrome':'0.64.2','wasm_runtime':True,'storage_and_atomic_rename':True,'real_library_discovery':True,'http_429_backoff':True,'pagination_and_deduplication':True,'metadata_escaping_in_wasm':True,'restart_persistence':True,'changed_release_replaces_snapshot':True,'display_config_refresh':True,'library_revocation_disables_plugin':True,'old_disk_snapshot_requires_manual_removal':True,'library_html_export':True,'export_file_mode':oct(export_mode),'ntfy_baseline_and_update_alerts':True,'ntfy_notifications':len(notifications),'caldav_create_and_date_update':True,'google_token_refresh_create_patch_delete':True,'unrelated_calendar_event_preserved':True,'ics_file_export':True,'fixture_requests':len(requests),'user_library_revocation_clears_cache':True}
+ results={'navidrome':'0.64.2','wasm_runtime':True,'storage_and_atomic_rename':True,'real_library_discovery':True,'http_429_backoff':True,'pagination_and_deduplication':True,'metadata_escaping_in_wasm':True,'restart_persistence':True,'changed_release_replaces_snapshot':True,'display_config_refresh':True,'library_revocation_disables_plugin':True,'old_disk_snapshot_requires_manual_removal':True,'library_html_export':True,'export_file_mode':oct(export_mode),'ntfy_baseline_and_update_alerts':True,'ntfy_notifications':len(notifications),'caldav_create_and_date_update':True,'google_token_refresh_create_patch_delete':True,'unrelated_calendar_event_preserved':True,'ics_file_export':True,'fixture_requests':len(requests),'user_library_revocation_clears_cache':True,'automatic_granted_user_selection':True,'ambiguous_grants_stop_processing':True}
  (ROOT/'dist/integration-results.json').write_text(json.dumps(results,indent=2));print(json.dumps(results,indent=2))
 finally:
  stop();fixture.shutdown()

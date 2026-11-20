@@ -58,22 +58,72 @@ try:
   page.reload();page.get_by_label('Navidrome username',exact=True).wait_for()
   assert page.get_by_text('Unable to render configuration form.',exact=False).count()==0
   titles={name:fixed['config']['schema']['properties'][name]['title'] for name in secret_fields}
-  for name,title in titles.items():
-   control=page.get_by_label(title,exact=True)
-   assert control.get_attribute('type')=='password',name+' is not masked'
-   control.fill('fixture-'+name)
-  page.get_by_label('Navidrome username',exact=True).fill('config-test')
+  categories=['Library','Releases','Local files','Notifications','Calendar']
+  def category(name):
+   try:page.get_by_role('tab',name=name,exact=True).click(timeout=5000)
+   except Exception:
+    page.screenshot(path=str(base/'category-failure.png'),full_page=True,animations='disabled')
+    (base/'category-failure.txt').write_text(page.locator('body').inner_text())
+    print('Category failure artifacts:',base)
+    raise
+  def provider(value):
+   page.get_by_role('button',name=fixed['config']['schema']['properties']['calendar_provider']['title'],exact=True).click()
+   page.get_by_role('option',name=value,exact=True).click()
+   page.get_by_role('listbox').wait_for(state='hidden')
+  def assert_spacing():
+   card=page.locator('.MuiCard-root').filter(has=page.get_by_role('heading',name='Configuration',exact=True))
+   boxes=card.locator('.MuiFormControl-root:visible').evaluate_all('(nodes)=>nodes.map(n=>{const r=n.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height}})')
+   for i,left in enumerate(boxes):
+    for right in boxes[i+1:]:
+     overlap_x=min(left['x']+left['w'],right['x']+right['w'])-max(left['x'],right['x'])
+     if overlap_x<=1:continue
+     upper,lower=sorted([left,right],key=lambda r:r['y'])
+     gap=lower['y']-(upper['y']+upper['h'])
+     assert gap>=8, 'configuration controls overlap or have insufficient spacing: '+str(round(gap,2))
+   assert card.evaluate('(n)=>n.scrollWidth<=n.clientWidth+1'),'configuration card overflows horizontally'
+  for name in categories:
+   category(name);assert_spacing()
+  category('Calendar')
+  assert page.get_by_label(titles['caldav_app_password'],exact=True).count()==0
+  assert page.get_by_label(titles['google_client_secret'],exact=True).count()==0
+  category('Notifications')
+  ntfy=page.get_by_label(titles['ntfy_access_token'],exact=True);assert ntfy.get_attribute('type')=='password';ntfy.fill('fixture-ntfy_access_token')
+  category('Calendar');provider('caldav')
+  caldav=page.get_by_label(titles['caldav_app_password'],exact=True);caldav.wait_for();assert caldav.get_attribute('type')=='password';caldav.fill('fixture-caldav_app_password');assert_spacing()
+  provider('google')
+  assert page.get_by_label(titles['caldav_app_password'],exact=True).count()==0
+  for name in ['google_client_secret','google_refresh_token']:
+   control=page.get_by_label(titles[name],exact=True);control.wait_for();assert control.get_attribute('type')=='password';control.fill('fixture-'+name)
+  assert_spacing()
+  # A blank username must save successfully; granted users determine the account.
+  category('Library');assert page.get_by_label('Navidrome username',exact=True).input_value()==''
   with page.expect_response(lambda r:r.request.method=='PUT' and '/api/plugin/release-radar' in r.url) as saved:
    page.get_by_role('button',name=re.compile(r'^save$',re.I)).click()
-  assert saved.value.status==200,'configuration could not be saved'
+  assert saved.value.status==200,'configuration could not be saved without a username'
   record=api('/api/plugin/release-radar');values=json.loads(record['config'])
   assert not record['enabled'],'test must not enable outbound integrations'
+  assert values.get('username','')==''
   for name in secret_fields:assert values[name]=='fixture-'+name
   page.reload();page.get_by_label('Navidrome username',exact=True).wait_for()
-  for name,title in titles.items():
-   control=page.get_by_label(title,exact=True);assert control.get_attribute('type')=='password';assert control.input_value()=='fixture-'+name
+  category('Notifications');assert page.get_by_label(titles['ntfy_access_token'],exact=True).input_value()=='fixture-ntfy_access_token'
+  category('Calendar')
+  for name in ['google_client_secret','google_refresh_token']:
+   control=page.get_by_label(titles[name],exact=True);assert control.get_attribute('type')=='password';assert control.input_value()=='fixture-'+name
+  provider('caldav');assert page.get_by_label(titles['caldav_app_password'],exact=True).input_value()=='fixture-caldav_app_password'
+  for width in [1280,390]:
+   page.set_viewport_size({'width':width,'height':1000})
+   if width<600:
+    # Navidrome changes its open desktop sidebar into a modal on resize.
+    drawer=page.locator('.MuiDrawer-modal')
+    drawer.wait_for(state='visible')
+    page.keyboard.press('Escape')
+    drawer.wait_for(state='hidden')
+   for name in categories:category(name);assert_spacing()
+   category('Calendar');provider('google');assert_spacing()
+   page.screenshot(path=str(base/('settings-'+str(width)+'.png')),full_page=True,animations='disabled')
+   category('Calendar');provider('caldav')
   assert page.get_by_text('Unable to render configuration form.',exact=False).count()==0
   browser.close()
- print('PASS: reproduced unknown password format, rendered all controls, verified four masked credentials, and saved/reloaded settings in real Navidrome.')
+ print('PASS: categorized settings render, desktop/mobile spacing, conditional calendar fields, masked credentials, and saving/reloading with automatic username selection.')
 finally:
  server.terminate();server.wait(timeout=15);log.close()

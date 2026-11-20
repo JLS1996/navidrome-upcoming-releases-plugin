@@ -2,8 +2,8 @@
 
 1. Copy `dist/release-radar.ndp` into Navidrome's plugins folder.
 2. Rescan plugins in the Navidrome admin UI.
-3. Configure **username** and assign that user and the intended libraries to the
-   plugin. Prefer a dedicated regular user whose library access matches the report.
+3. Grant access to **one user** and the intended libraries. The plugin selects
+   that user automatically; leave **username** blank. Prefer a dedicated regular user whose library access matches the report.
 4. Set **contact** to your email or project URL for MusicBrainz request identification.
 5. Enable the plugin. The first report appears immediately; checks progress in the
    background, at most one HTTP request per callback. Library discovery refreshes

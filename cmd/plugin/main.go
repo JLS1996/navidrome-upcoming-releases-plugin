@@ -144,16 +144,18 @@ func (p *plugin) tick() error {
 	if err != nil {
 		return finish(err)
 	}
-	permitted := false
+	granted := make([]string, 0, len(users))
 	for _, u := range users {
-		if u.UserName == c.Username {
-			permitted = true
-		}
+		granted = append(granted, u.UserName)
 	}
-	if !permitted {
+	c.Username, err = radar.ResolveUsername(c.Username, granted)
+	if err != nil {
 		s = radar.State{Schema: 1}
-		return finish(fmt.Errorf("the configured user must be assigned to the plugin in Navidrome"))
+		return finish(err)
 	}
+	// Event IDs and delivery targets must use the resolved account, including
+	// when selection was automatic, so switching modes preserves event identity.
+	ic = integrationConfig(c)
 	libs, err := host.Libraries()
 	if err != nil {
 		return finish(err)

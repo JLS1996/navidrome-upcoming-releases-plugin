@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/JLS1996/navidrome-upcoming-releases-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/JLS1996/navidrome-upcoming-releases-plugin/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-0.2.2-green)
+![Version](https://img.shields.io/badge/version-0.2.3-green)
 ![Navidrome](https://img.shields.io/badge/tested%20with-Navidrome%200.64.2-orange)
 
 Keep up with new music from the artists already in your Navidrome library.
@@ -28,7 +28,7 @@ Keep up with new music from the artists already in your Navidrome library.
 
 1. [Download the plugin](https://github.com/JLS1996/navidrome-upcoming-releases-plugin/raw/main/dist/release-radar.ndp) or [build it](docs/development.md#build).
 2. Copy it into Navidrome's plugins folder and rescan plugins.
-3. Select a username, grant the intended user/library access, then enable it.
+3. Grant access to one user and the intended libraries, then enable it.
 4. Open the generated HTML file locally. [Installation and file access →](docs/installation.md)
 
 Local files are created under `<DataFolder>/plugins/release-radar/storage/`. Running Navidrome as a different OS user may require host-side file sharing.

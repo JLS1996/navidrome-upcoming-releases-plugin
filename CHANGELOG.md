@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.3
+
+- Organize settings into Library, Releases, Local files, Notifications and Calendar tabs.
+- Add grouped vertical layouts, shorter labels and multiline artist settings.
+- Show only the selected calendar provider’s credentials.
+- Automatically use the single user granted access; typing a username is optional.
+- Stop safely when grants are missing or ambiguous, retaining explicit selection for multiple users.
+- Use the resolved user consistently for library permissions and calendar/notification identities.
+
 ## 0.2.2
 
 - Fix the configuration form failing on the unsupported JSON Schema `password` format.

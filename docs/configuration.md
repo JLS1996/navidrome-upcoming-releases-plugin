@@ -1,8 +1,12 @@
 # Configuration
 
+Settings are organized into Library, Releases, Local files, Notifications and
+Calendar tabs. Fields are stacked in named groups; artist overrides and exclusions
+have multiline inputs. Calendar credentials appear only for the selected provider.
+
 | Setting | Default | Meaning |
 |---|---|---|
-| `username` | required | Navidrome user assigned to this plugin; no password required |
+| `username` | blank (automatic) | Uses the single granted user. Optional explicit choice when several users are granted access; no password required |
 | `contact` | blank | Contact placed in outbound User-Agent, never in report |
 | `ahead_days` | 90 | Upcoming window, 1–730 days |
 | `past_days` | 30 | Recent window, 0–365 days |
@@ -28,3 +32,8 @@ Example overrides (use IDs shown in the report's attention section or Navidrome)
 Artist name equality cannot prove identity. Tagging with MusicBrainz artist IDs or
 using overrides is preferable. Ambiguous/missing matches are flagged; they do not
 silently become empty successful results. Various Artists is skipped.
+
+User Access grants are authoritative. No granted users stops processing; several
+granted users require selecting one or an explicit granted username. With multiple grants, the plugin never picks an administrator automatically or
+combines different users’ libraries.
+Existing explicit usernames remain supported and must be in the granted list.

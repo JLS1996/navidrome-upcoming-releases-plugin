@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-const Version = "0.2.2"
+const Version = "0.2.3"
 
 var uuidRE = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
 
@@ -67,9 +67,6 @@ func DefaultConfig() Config {
 	return Config{CalendarNamespace: "release-radar", AheadDays: 90, PastDays: 30, AutoMatch: true, Overrides: map[string]string{}, Exclusions: map[string]bool{}}
 }
 func (c Config) Validate() error {
-	if c.Username == "" {
-		return fmt.Errorf("set username to a user assigned to this plugin")
-	}
 	if c.AheadDays < 1 || c.AheadDays > 730 || c.PastDays < 0 || c.PastDays > 365 {
 		return fmt.Errorf("invalid date window")
 	}

@@ -76,8 +76,9 @@ NAVIDROME_BIN=/path/to/navidrome python3 scripts/test_config_form.py
 ```
 
 It reproduces the old unsupported-format error, then checks that the fixed schema
-renders, masks credential inputs and saves/reloads configuration without enabling
-any external integration. The native manifest test runs in CI to prevent putting
+renders, checks categorized settings and field spacing at desktop and narrow
+viewport sizes, masks credential inputs and saves/reloads with automatic user
+selection without enabling any external integration. The native manifest test runs in CI to prevent putting
 UI-only password formats back into JSON Schema.
 
 The Google OAuth helper needs real user consent for a final live-account check.

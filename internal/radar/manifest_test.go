@@ -7,6 +7,16 @@ import (
 	"testing"
 )
 
+type uiElement struct {
+	Type    string `json:"type"`
+	Scope   string `json:"scope"`
+	Label   string `json:"label"`
+	Options struct {
+		Format string `json:"format"`
+	} `json:"options"`
+	Elements []uiElement `json:"elements"`
+}
+
 // Navidrome's AJV validator rejects format=password. Its UI renderer expects
 // masking in the control's options, independently from validation constraints.
 func TestManifestCredentialControlsRenderWithoutUnknownFormats(t *testing.T) {
@@ -19,16 +29,7 @@ func TestManifestCredentialControlsRenderWithoutUnknownFormats(t *testing.T) {
 					Format string `json:"format"`
 				} `json:"properties"`
 			} `json:"schema"`
-			UI struct {
-				Type     string `json:"type"`
-				Elements []struct {
-					Type    string `json:"type"`
-					Scope   string `json:"scope"`
-					Options struct {
-						Format string `json:"format"`
-					} `json:"options"`
-				} `json:"elements"`
-			} `json:"uiSchema"`
+			UI uiElement `json:"uiSchema"`
 		} `json:"config"`
 	}
 	b, err := os.ReadFile(filepath.Join("..", "..", "manifest.json"))
@@ -41,18 +42,34 @@ func TestManifestCredentialControlsRenderWithoutUnknownFormats(t *testing.T) {
 	if m.Version != Version {
 		t.Fatal("manifest and runtime versions differ")
 	}
-	if m.Config.UI.Type != "VerticalLayout" {
-		t.Fatal("configuration controls need a supported root layout")
+	if m.Config.UI.Type != "Categorization" {
+		t.Fatal("configuration needs clearly categorized tabs")
 	}
 	controls := map[string]string{}
-	for _, control := range m.Config.UI.Elements {
-		if control.Type != "Control" {
-			t.Fatal("unsupported configuration control")
+	labels := map[string]bool{}
+	var walk func(uiElement)
+	walk = func(node uiElement) {
+		switch node.Type {
+		case "Control":
+			if _, exists := controls[node.Scope]; exists {
+				t.Fatal("duplicate control", node.Scope)
+			}
+			controls[node.Scope] = node.Options.Format
+		case "Category":
+			labels[node.Label] = true
+		case "Categorization", "Group", "VerticalLayout", "Label":
+		default:
+			t.Fatal("unsupported UI layout", node.Type)
 		}
-		if _, exists := controls[control.Scope]; exists {
-			t.Fatal("duplicate configuration control", control.Scope)
+		for _, child := range node.Elements {
+			walk(child)
 		}
-		controls[control.Scope] = control.Options.Format
+	}
+	walk(m.Config.UI)
+	for _, label := range []string{"Library", "Releases", "Local files", "Notifications", "Calendar"} {
+		if !labels[label] {
+			t.Fatal("missing settings category", label)
+		}
 	}
 	for name, p := range m.Config.Schema.Properties {
 		if p.Format != "" {
