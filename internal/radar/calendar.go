@@ -79,7 +79,7 @@ func EventICS(e CalendarEvent, now time.Time) string {
 }
 func CalendarICS(events []CalendarEvent, now time.Time) []byte {
 	var b strings.Builder
-	b.WriteString("BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Release Radar//Music releases//EN\r\nCALSCALE:GREGORIAN\r\nX-WR-CALNAME:Music releases\r\n")
+	b.WriteString("BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//navidrome-upcoming-releases-plugin//Music releases//EN\r\nCALSCALE:GREGORIAN\r\nX-WR-CALNAME:Music releases\r\n")
 	for _, e := range events {
 		b.WriteString(EventICS(e, now))
 	}
@@ -88,7 +88,7 @@ func CalendarICS(events []CalendarEvent, now time.Time) []byte {
 }
 func ownedICS(body []byte, uid string) bool {
 	s := strings.ReplaceAll(strings.ReplaceAll(string(body), "\r\n ", ""), "\r\n\t", "")
-	return strings.Contains(s, "PRODID:-//Release Radar//") && strings.Contains(s, "\r\nUID:"+uid+"\r\n")
+	return (strings.Contains(s, "PRODID:-//navidrome-upcoming-releases-plugin//") || strings.Contains(s, "PRODID:-//Release Radar//")) && strings.Contains(s, "\r\nUID:"+uid+"\r\n")
 }
 func FullCycle(s State, c Config) bool {
 	if c.ExcludeUncredited && !c.DirectReady {

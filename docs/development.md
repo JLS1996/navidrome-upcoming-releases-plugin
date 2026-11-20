@@ -19,7 +19,7 @@ go mod download
 ./scripts/build.sh
 ```
 
-The result is `dist/release-radar.ndp`. Debug metadata is stripped from distributed
+The result is `dist/navidrome-upcoming-releases-plugin.ndp`. Debug metadata is stripped from distributed
 builds. No credentials or runtime files are needed for a normal build.
 
 For an additional configured service, grant only its explicit hostname:
@@ -41,6 +41,8 @@ go test -race -cover ./...
 go vet ./...
 go run ./cmd/preview
 go run ./cmd/preview -covers -out dist/preview-covers.html
+go run ./cmd/preview -covers -theme bright -out dist/preview-bright.html
+go run ./cmd/preview -covers -theme black -out dist/preview-black.html
 ```
 
 The preview uses explicitly fictional sample releases. Open `dist/preview.html`

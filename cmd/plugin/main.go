@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
+	host "github.com/JLS1996/navidrome-upcoming-releases-plugin/internal/navhost"
+	"github.com/JLS1996/navidrome-upcoming-releases-plugin/internal/radar"
 	"github.com/extism/go-pdk"
-	host "release-radar/internal/navhost"
-	"release-radar/internal/radar"
 )
 
 type plugin struct{}
@@ -32,6 +32,7 @@ func initialize() int32 { return exported((&plugin{}).OnInit()) }
 func scheduled() int32 { return exported((&plugin{}).tick()) }
 func main()            {}
 func (p *plugin) OnInit() error {
+	// Retain the scheduler key used by existing installations.
 	if err := host.Schedule("@every 2s", "tick", "release-radar-tick"); err != nil {
 		return err
 	}
@@ -46,10 +47,11 @@ func str(key, def string) string {
 }
 func config() (radar.Config, error) {
 	c := radar.DefaultConfig()
+	c.Theme = str("dashboard_theme", "dark")
 	c.CoverArt = str("cover_art", "false") == "true"
 	c.ExcludeUncredited = str("exclude_uncredited", "false") == "true"
 	c.ExcludeOwned = str("exclude_owned", "false") == "true"
-	c.CalendarNamespace = str("calendar_namespace", "release-radar")
+	c.CalendarNamespace = str("calendar_namespace", "navidrome-upcoming-releases-plugin")
 	var err error
 	c.AheadDays, err = strconv.Atoi(str("ahead_days", "90"))
 	if err != nil {
@@ -90,7 +92,7 @@ func config() (radar.Config, error) {
 }
 func integrationConfig(c radar.Config) radar.IntegrationConfig {
 	return radar.IntegrationConfig{
-		Namespace: c.EventNamespace(), NtfyURL: str("ntfy_server", "https://ntfy.sh"), NtfyTopic: str("ntfy_topic", ""), NtfyToken: str("ntfy_access_token", ""), NotifyInitial: str("ntfy_notify_initial", "false") == "true",
+		Namespace: c.EventNamespace(), NtfyEnabled: str("ntfy_enabled", "false") == "true", NotifyNew: str("ntfy_notify_new", "true") == "true", NotifyUpdates: str("ntfy_notify_updates", "true") == "true", NotifyReleaseDay: str("ntfy_notify_release_day", "false") == "true", NtfyURL: str("ntfy_server", "https://ntfy.sh"), NtfyTopic: str("ntfy_topic", ""), NtfyToken: str("ntfy_access_token", ""), NotifyInitial: str("ntfy_notify_initial", "false") == "true",
 		CalendarProvider: str("calendar_provider", "none"), CalDAVURL: str("caldav_calendar_url", ""), CalDAVUser: str("caldav_username", ""), CalDAVPassword: str("caldav_app_password", ""),
 		GoogleCalendarID: str("google_calendar_id", ""), GoogleClientID: str("google_client_id", ""), GoogleClientSecret: str("google_client_secret", ""), GoogleRefreshToken: str("google_refresh_token", "")}
 }
@@ -250,7 +252,7 @@ func (p *plugin) tick() error {
 	if s.NextDiscovery == 0 {
 		s.Problem = ""
 	}
-	view := radar.Version + "/" + fmt.Sprintf("%d/%d/%v/%v/%t", c.AheadDays, c.PastDays, c.PrimaryTypes, c.SecondaryTypes, c.IncludeStandard) + fmt.Sprint(c.CoverArt, c.ExcludeOwned, s.OwnedAt, c.ExcludeUncredited, s.Direct.At) + ic.Fingerprint()
+	view := radar.Version + "/" + fmt.Sprintf("%d/%d/%v/%v/%t", c.AheadDays, c.PastDays, c.PrimaryTypes, c.SecondaryTypes, c.IncludeStandard) + fmt.Sprint(c.Theme, c.CoverArt, c.ExcludeOwned, s.OwnedAt, c.ExcludeUncredited, s.Direct.At) + ic.Fingerprint()
 	viewChanged := s.ViewConfig != view
 	s.ViewConfig = view
 	d, loadErr := radar.LoadDeliveries(dir)

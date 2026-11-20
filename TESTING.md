@@ -2,6 +2,7 @@
 
 Tested with Navidrome 0.64.2, Go 1.25.x and TinyGo 0.40.1.
 
+- Native tests verify notification switches/categories, UTC reminder deduplication, theme-only changes and legacy calendar identity compatibility.
 - Native tests cover owned-album matching/pagination, artwork validation/cache/redirects, release-type selectors, dates, shared releases, pagination,
   retry/backoff, escaping, state validation and safe file writes.
 - Integration tests run the actual WASM plugin in Navidrome with disposable local
@@ -13,6 +14,7 @@ Tested with Navidrome 0.64.2, Go 1.25.x and TinyGo 0.40.1.
   release selectors, the refresh switch above the tabs, paragraph spacing, Matching
   placement, masked credentials and saving/reloading. CI also checks the
   manifest's schema and UI controls.
+- All three themes are checked offline on desktop and mobile, with artwork and calendar navigation.
 - Offline browser tests check list/calendar filters, Live selection, uncertain
   dates, direct downloads, simulated mobile sharing and its text fallback. The
   calendar fits seven columns from 320 px upward and supports selected-day details

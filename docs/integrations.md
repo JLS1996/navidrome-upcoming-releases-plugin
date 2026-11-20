@@ -8,7 +8,7 @@ Local report files remain in plugin storage. When you enable an integration,
 selected release information is sent outbound to that destination: ntfy, CalDAV,
 or Google Calendar. This does not provide incoming web access to Navidrome files.
 
-The plugin also generates `<DataFolder>/plugins/release-radar/storage/music-releases.ics`.
+The plugin also generates `<DataFolder>/plugins/navidrome-upcoming-releases-plugin/storage/music-releases.ics`.
 The HTML embeds the same calendar for local downloading or sharing,
 so it works even when you copy only the HTML file. It exports the complete report's
 configured date/type window, independently of the browser search/month filters.
@@ -28,20 +28,40 @@ updates. The plugin does not serve a subscription URL.
 
 ## ntfy alerts — free hosted or your existing server
 
-1. Install an ntfy client or use the ntfy web app and subscribe to your chosen topic.
-2. Set `ntfy_topic`; leave `ntfy_server` as `https://ntfy.sh` for the hosted service.
-3. If required by your server, set `ntfy_access_token`.
-4. Enable `ntfy_notify_initial` only if you want notifications for releases already
-   present at first enable. Its default is **false**, suppressing an initial flood.
+1. Install an ntfy client or open its web app and subscribe to your chosen topic.
+2. In **Integrations**, turn on **Enable ntfy notifications**.
+3. Enter the same **Topic** and leave **ntfy server** as `https://ntfy.sh` for the
+   free hosted service. Enter an access token if your server requires one.
+4. Choose the notifications you want, then Save.
 
-The plugin publishes new/changed releases in the configured report window, including
-changed dates. These are discovery/update alerts, not a release-day reminder scheduler.
-They are deduplicated using persistent acknowledgements; no repeat is expected on an
-ordinary restart. A crash after publication but before the acknowledgement is written
-can still duplicate a notification (at-least-once delivery). Rate-limit errors are
-retried with backoff. Free hosted service limits still apply; no paid ntfy feature is
-required. Public topics are not private unless the server restricts access: choose an
-unguessable topic or use an existing access-controlled server for personal data.
+| Choice | Default | When it sends |
+|---|---|---|
+| Enable ntfy notifications | Off | Master switch; disabling it keeps topic, credentials and history |
+| Newly found releases | On | A release first appears in the configured report window |
+| Changed release details | On | A known release changes its date, title or other reported details |
+| Release-day reminders | Off | Once per release and confirmed date, on that UTC day |
+| Notify about existing releases | Off | Include the first scan's backlog when Newly found releases is enabled |
+
+All alerts follow the date window, release-type settings and library exclusions.
+They do not follow temporary search filters in an opened HTML report. Discovery
+alerts can include a recent release when it first becomes known to the plugin.
+
+Release-day reminders require the plugin to run on that day and the release to
+have a complete date. There is no catch-up for missed days or guessed reminder
+for a year/month-only date. A changed release date can receive a reminder on its
+new date. Reminder acknowledgements survive restarts.
+
+Turning off a notification category acknowledges skipped discoveries or changes,
+so turning it back on does not replay them. Turning off the master switch pauses
+sending; re-enabling resumes pending items still in the report window. The initial
+backlog option applies when a destination is first initialized, not on every restart.
+
+Delivery is retried with backoff and persistent acknowledgements. A crash after
+publication but before acknowledgement can still duplicate an alert. Free hosted
+service limits apply; no paid ntfy feature is required.
+
+Public topics are not private unless the server restricts access. Choose an
+unguessable topic or an existing access-controlled server for personal data.
 
 ## Direct calendar sync — optional and disabled by default
 
@@ -52,7 +72,7 @@ whose exact dates become uncertain. Unrelated events are never intentionally mod
 ETags and ownership markers protect updates; a conflict is re-read before another
 write. Configuration/network failures do not silently become an empty success.
 
-`calendar_namespace` defaults to `release-radar`; together with the granted Navidrome user
+`calendar_namespace` defaults to `navidrome-upcoming-releases-plugin`; together with the granted Navidrome user
 it controls event identities. Give each installation a unique namespace if several
 installations share a calendar. Changing namespace, granted user, provider or target does
 **not** remove previously exported events from the old target. Disabling sync also
@@ -115,9 +135,13 @@ using the account that owns the destination calendar.
 
 | Setting | Default | Meaning |
 |---|---|---|
-| `calendar_namespace` | `release-radar` | Stable instance identity for generated events |
+| `calendar_namespace` | `navidrome-upcoming-releases-plugin` | Stable instance identity for generated events |
 | `ntfy_server` | `https://ntfy.sh` | Publishing server; custom hosts need manifest permission |
-| `ntfy_topic` | blank | Blank disables notifications |
+| `ntfy_enabled` | false | Explicit master switch |
+| `ntfy_topic` | blank | Destination topic; required for sending |
+| `ntfy_notify_new` | true | Newly found releases |
+| `ntfy_notify_updates` | true | Changed release details |
+| `ntfy_notify_release_day` | false | Remind on a confirmed UTC release date |
 | `ntfy_access_token` | blank | Optional bearer token, kept out of generated files |
 | `ntfy_notify_initial` | false | Publish the initial backlog instead of baselining it |
 | `calendar_provider` | `none` | `none`, `caldav`, or `google` |

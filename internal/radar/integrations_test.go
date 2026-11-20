@@ -19,7 +19,7 @@ func published() State {
 	return s
 }
 func icfg() IntegrationConfig {
-	return IntegrationConfig{Namespace: cfg().EventNamespace(), NtfyURL: "https://ntfy.sh", CalendarProvider: "none"}
+	return IntegrationConfig{NtfyEnabled: true, NotifyNew: true, NotifyUpdates: true, Namespace: cfg().EventNamespace(), NtfyURL: "https://ntfy.sh", CalendarProvider: "none"}
 }
 func TestICSIdentityDatesEscapingAndFolding(t *testing.T) {
 	s := published()

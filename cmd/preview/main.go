@@ -5,21 +5,23 @@ import (
 	"bytes"
 	"encoding/base64"
 	"flag"
+	"github.com/JLS1996/navidrome-upcoming-releases-plugin/internal/radar"
 	"image"
 	"image/color"
 	"image/png"
 	"math"
 	"os"
-	"release-radar/internal/radar"
 	"time"
 )
 
 func main() {
+	theme := flag.String("theme", "dark", "dashboard theme: bright, dark or black")
 	art := flag.Bool("covers", false, "include original synthetic demo artwork")
 	out := flag.String("out", "dist/preview.html", "output path")
 	flag.Parse()
 	now := time.Date(2026, 11, 19, 12, 0, 0, 0, time.UTC)
 	c := radar.DefaultConfig()
+	c.Theme = *theme
 	c.Username = "demo"
 	c.PrimaryTypes = append(c.PrimaryTypes, "Single")
 	c.SecondaryTypes = []string{"Live"}

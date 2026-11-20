@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.8.0
+
+- Rename the displayed plugin and standard package to navidrome-upcoming-releases-plugin.
+- Preserve existing calendar identities and document the filename-compatible upgrade.
+- Add an explicit ntfy switch and choices for discoveries, updates and release-day reminders.
+- Add bright, dark and black HTML themes without changing release or calendar data.
+- Break settings help into readable paragraphs and expand integration setup guidance.
+- Publish the installable package, reviewed source archive and checksums as a GitHub release.
+
+## 0.7.1
+
+- Order General as Date window, Appearance, Automatic matching and Exclusions.
+- Group both library filters under Exclusions.
+
+## 0.7.0
+
+- Optionally skip artists without a standalone album or track credit in granted libraries.
+- Keep excluded metadata cached and pause integrations until scoped credit scans finish.
+- Move date window, automatic matching and owned-release filtering into General.
+
 ## 0.6.0
 
 - Add an optional Releases setting to exclude music already in the granted libraries.

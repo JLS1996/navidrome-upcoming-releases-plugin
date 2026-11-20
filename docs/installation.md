@@ -1,6 +1,6 @@
 # Installation
 
-1. Copy `release-radar.ndp` into Navidrome's plugins folder and rescan plugins.
+1. Copy `navidrome-upcoming-releases-plugin.ndp` into Navidrome's plugins folder and rescan plugins.
 2. In the plugin's **Users Permission** card, grant exactly one user. Prefer a
    regular user with access to the music you want in the report.
 3. In **Library Permission**, select the intended libraries. Write access is not
@@ -9,7 +9,7 @@
 5. Open the generated HTML from Navidrome's data directory:
 
    ```text
-   <DataFolder>/plugins/release-radar/storage/upcoming-releases.html
+   <DataFolder>/plugins/navidrome-upcoming-releases-plugin/storage/upcoming-releases.html
    ```
 
 The first report appears as checks start. Large libraries take longer to finish;
@@ -46,6 +46,27 @@ optional `covers.json` cache private; they contain library metadata and integrat
 
 The plugin serves no files over HTTP. Keep reports out of public web roots and
 reverse-proxy file mappings.
+
+## Upgrading from Release Radar
+
+Navidrome uses the **package filename** as the plugin ID. For an existing
+installation, rename the new download to **`release-radar.ndp`** before replacing
+the old package, then rescan plugins. The displayed name changes to
+`navidrome-upcoming-releases-plugin`, while the existing settings, grants, cached
+lookups and integration acknowledgements stay attached to the same plugin ID.
+Its files remain in `<DataFolder>/plugins/release-radar/storage/`.
+
+Do not install both filenames: they would run as separate plugins and could send
+duplicate alerts or sync the same calendar. Keep your existing calendar instance
+name; calendar event IDs are compatible with the rename.
+
+After upgrading, review **Integrations → Enable ntfy notifications**. The new
+switch defaults to off, even if a topic was configured before. Select the alerts
+you want and Save. Release-day reminders are also off by default.
+
+New installations should use `navidrome-upcoming-releases-plugin.ndp`. If you
+choose to change an existing installation's plugin ID, Navidrome treats it as a
+new installation: configuration, permissions and storage do not transfer automatically.
 
 ## Updating
 

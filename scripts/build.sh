@@ -15,7 +15,7 @@ for host in args.allow_host:
         if len(host)>253 or not re.fullmatch(r'[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?',host):
             raise SystemExit('Invalid extra host: use only a hostname, IP or CIDR, without credentials or wildcards.')
     if host not in m['permissions']['http']['requiredHosts']:m['permissions']['http']['requiredHosts'].append(host)
-with zipfile.ZipFile('dist/release-radar.ndp','w',zipfile.ZIP_DEFLATED) as z:
+with zipfile.ZipFile('dist/navidrome-upcoming-releases-plugin.ndp','w',zipfile.ZIP_DEFLATED) as z:
     z.writestr('manifest.json',json.dumps(m,indent=2)+'\n')
     z.write('dist/plugin.wasm','plugin.wasm')
     z.write('LICENSE','LICENSE')

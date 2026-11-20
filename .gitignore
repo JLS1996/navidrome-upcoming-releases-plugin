@@ -22,5 +22,5 @@ google-oauth*.json
 # Build-only and local test artifacts
 /internal/radar/provider_fixture.go
 /dist/*
-!/dist/release-radar.ndp
+!/dist/navidrome-upcoming-releases-plugin.ndp
 !/dist/plugin.sha256

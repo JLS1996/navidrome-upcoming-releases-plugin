@@ -95,10 +95,10 @@ try:
  subprocess.run(['tinygo','build','-o',str(wasm),'-target','wasip1','-buildmode=c-shared','-tags','radar_fixture','./cmd/plugin'],check=True,cwd=ROOT)
 finally:fixture_source.unlink()
 m=json.loads((ROOT/'manifest.json').read_text());m['permissions']['http']['requiredHosts']=['127.0.0.1']
-with zipfile.ZipFile(base/'data/plugins/release-radar.ndp','w',zipfile.ZIP_DEFLATED) as z:z.writestr('manifest.json',json.dumps(m));z.write(wasm,'plugin.wasm')
+with zipfile.ZipFile(base/'data/plugins/navidrome-upcoming-releases-plugin.ndp','w',zipfile.ZIP_DEFLATED) as z:z.writestr('manifest.json',json.dumps(m));z.write(wasm,'plugin.wasm')
 config=base/'navidrome.toml';config.write_text(f"DataFolder = '{base}/data'\nMusicFolder = '{base}/music'\nCacheFolder = '{base}/cache'\nAddress = '127.0.0.1'\nPort = 4534\nLogLevel = 'debug'\nAgents = ''\n[Plugins]\nEnabled = true\n")
 url='http://127.0.0.1:4534';token='';server=None;log=None
-storage=base/'data/plugins/release-radar/storage';statefile=storage/'state.json'
+storage=base/'data/plugins/navidrome-upcoming-releases-plugin/storage';statefile=storage/'state.json'
 def call(path,method='GET',payload=None):
  headers={'Content-Type':'application/json'}
  if token:headers['x-nd-authorization']='Bearer '+token
@@ -121,12 +121,12 @@ def start():
 def stop():
  global server
  if server:server.terminate();server.wait(timeout=15);server=None;log.close()
-def update(**kwargs):return call('/api/plugin/release-radar','PUT',kwargs)
+def update(**kwargs):return call('/api/plugin/navidrome-upcoming-releases-plugin','PUT',kwargs)
 def state():return json.loads(statefile.read_text())
 def completed():
  s=state();return s if len(s['entries'])==1 and s['entries'][0]['phase']=='done' else None
 # Legacy keys must be ignored: identity comes from grants and output stays in storage.
-common={'username':'obsolete-user','contact':'private-unused@example.com','auto_match':False,'export_library_id':1,'ntfy_server':'https://ntfy.sh/ntfy','ntfy_topic':'fixture-topic','ntfy_access_token':'fixture-ntfy-secret','calendar_provider':'caldav','caldav_calendar_url':'https://caldav.icloud.com/caldav/','caldav_username':'fixture-user','caldav_app_password':'fixture-app-password'}
+common={'ntfy_enabled':True,'username':'obsolete-user','contact':'private-unused@example.com','auto_match':False,'export_library_id':1,'ntfy_server':'https://ntfy.sh/ntfy','ntfy_topic':'fixture-topic','ntfy_access_token':'fixture-ntfy-secret','calendar_provider':'caldav','caldav_calendar_url':'https://caldav.icloud.com/caldav/','caldav_username':'fixture-user','caldav_app_password':'fixture-app-password'}
 def settings(**changes):common.update(changes);return json.dumps(common)
 def deliveries():return json.loads((storage/'integrations.json').read_text())
 def owned_caldav():return {k:v for k,v in caldav.items() if '/rr-' in k}
@@ -251,11 +251,11 @@ try:
  before_user_revoke=len(requests)
  call('/api/user/'+reader['id']+'/library','PUT',{'libraryIds':[int(empty['id'])]})
  wait_for(lambda:state().get('entries')==[])
- assert call('/api/plugin/release-radar')['enabled'] is True,'test must revoke user access without disabling plugin'
+ assert call('/api/plugin/navidrome-upcoming-releases-plugin')['enabled'] is True,'test must revoke user access without disabling plugin'
  assert 'Radiohead' not in (storage/'upcoming-releases.html').read_text()
  time.sleep(3);assert len(requests)==before_user_revoke,'metadata requests continued for a revoked library'
  update(allLibraries=False,libraries='[]')
- wait_for(lambda:call('/api/plugin/release-radar').get('enabled') is False)
+ wait_for(lambda:call('/api/plugin/navidrome-upcoming-releases-plugin').get('enabled') is False)
  before_revoked=len(requests);time.sleep(3);assert len(requests)==before_revoked,'requests continued after revocation'
  # Navidrome disables the runtime before it can clear old disk snapshots.
  results={'navidrome':'0.64.2','wasm_runtime':True,'storage_and_atomic_rename':True,'real_library_discovery':True,'http_429_backoff':True,'http_503_global_backoff_and_restart':True,'pagination_and_deduplication':True,'metadata_escaping_in_wasm':True,'restart_persistence':True,'changed_release_replaces_snapshot':True,'display_config_refresh':True,'manual_refresh_both_saved_transitions':True,'idle_upgrade_refresh_preserves_lookup_cache':True,'library_revocation_disables_plugin':True,'old_disk_snapshot_requires_manual_removal':True,'storage_only_reports':True,'storage_file_mode':oct(storage_mode),'legacy_identity_and_contact_ignored':True,'ntfy_baseline_and_update_alerts':True,'ntfy_notifications':len(notifications),'caldav_create_and_date_update':True,'google_token_refresh_create_patch_delete':True,'unrelated_calendar_event_preserved':True,'ics_file_export':True,'exclude_owned_library_album_and_toggle':True,'direct_album_and_track_credit_filter_and_toggle':True,'offline_artwork_redirect_cache_and_toggle':True,'wasm_png_and_jpeg_thumbnails':True,'fixture_requests':len(requests),'user_library_revocation_clears_cache':True,'automatic_granted_user_selection':True,'ambiguous_grants_stop_processing':True}

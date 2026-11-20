@@ -18,8 +18,8 @@ secret_fields=['ntfy_access_token','caldav_app_password','google_client_secret',
 fixed=json.loads((ROOT/'manifest.json').read_text());broken=copy.deepcopy(fixed)
 broken['config'].pop('uiSchema',None)
 for name in secret_fields:broken['config']['schema']['properties'][name]['format']='password'
-package=base/'data/plugins/release-radar.ndp'
-with zipfile.ZipFile(ROOT/'dist/release-radar.ndp') as z:wasm=z.read('plugin.wasm')
+package=base/'data/plugins/navidrome-upcoming-releases-plugin.ndp'
+with zipfile.ZipFile(ROOT/'dist/navidrome-upcoming-releases-plugin.ndp') as z:wasm=z.read('plugin.wasm')
 def write_package(manifest):
  with zipfile.ZipFile(package,'w',zipfile.ZIP_DEFLATED) as z:z.writestr('manifest.json',json.dumps(manifest));z.writestr('plugin.wasm',wasm)
 write_package(broken)
@@ -45,13 +45,13 @@ server=subprocess.Popen([navidrome,'--configfile',str(config)],stdout=log,stderr
 try:
  wait_for(lambda:urllib.request.urlopen(url+'/app/',timeout=2).status==200)
  auth=api('/auth/createAdmin','POST',{'username':'config-test','password':secrets.token_urlsafe(32)})
- wait_for(lambda:api('/api/plugin/release-radar')['id']=='release-radar')
+ wait_for(lambda:api('/api/plugin/navidrome-upcoming-releases-plugin')['id']=='navidrome-upcoming-releases-plugin')
  storage={'token':auth['token'],'userId':auth['id'],'username':auth['username'],'name':auth['name'],'role':'admin','subsonic-salt':auth['subsonicSalt'],'subsonic-token':auth['subsonicToken'],'is-authenticated':'true'}
  with sync_playwright() as p:
   browser=p.chromium.launch(headless=True,executable_path=shutil.which('chromium'),args=['--no-sandbox'])
   context=browser.new_context()
   context.add_init_script('const fixtureAuth='+json.dumps(storage)+';for(const [key,value] of Object.entries(fixtureAuth)){localStorage.setItem(key,value)}')
-  page=context.new_page();page.goto(url+'/app/#/plugin/release-radar/show')
+  page=context.new_page();page.goto(url+'/app/#/plugin/navidrome-upcoming-releases-plugin/show')
   page.get_by_text('Unable to render configuration form.',exact=False).wait_for()
   assert page.get_by_text('unknown format "password"',exact=False).count()>0,'did not reproduce the reported AJV failure'
   write_package(fixed);api('/api/plugin/rescan','POST')
@@ -59,6 +59,11 @@ try:
   assert page.get_by_text('Unable to render configuration form.',exact=False).count()==0
   titles={name:fixed['config']['schema']['properties'][name]['title'] for name in secret_fields}
   categories=['General','Releases','Integrations','Matching']
+  def field(title):
+   # Navidrome/JSONForms can omit or reuse input IDs after changing tabs.
+   # Select the visible text-field container by its own label and verify saved data.
+   label=page.locator('label').filter(has_text=re.compile('^'+re.escape(title)+'$'))
+   return page.locator('.MuiFormControl-root').filter(has=label).locator('input,textarea')
   def category(name):
    try:page.get_by_role('tab',name=name,exact=True).click(timeout=5000)
    except Exception:
@@ -101,61 +106,69 @@ try:
   toggle.check()
   assert toggle.bounding_box()['y']<page.get_by_role('tablist').bounding_box()['y']
   assert page.get_by_role('tab',name='Matching',exact=True).get_attribute('aria-selected')=='true'
-  category('Matching');assert page.get_by_label('Artist ID overrides',exact=True).is_visible()
+  category('Matching');field('Artist ID overrides').wait_for()
   category('Integrations')
-  assert page.get_by_label(titles['caldav_app_password'],exact=True).count()==0
-  assert page.get_by_label(titles['google_client_secret'],exact=True).count()==0
+  assert field(titles['caldav_app_password']).count()==0
+  assert field(titles['google_client_secret']).count()==0
   category('Integrations')
-  ntfy=page.get_by_label(titles['ntfy_access_token'],exact=True);assert ntfy.get_attribute('type')=='password';ntfy.fill('fixture-ntfy_access_token')
+  enable=page.get_by_role('checkbox',name='Enable ntfy notifications',exact=True)
+  assert not enable.is_checked();enable.check()
+  for label in ['Newly found releases','Changed release details','Release-day reminders']:
+   assert page.get_by_role('checkbox',name=label,exact=True).count()==1
+  page.get_by_role('checkbox',name='Release-day reminders',exact=True).check()
+  ntfy=field(titles['ntfy_access_token']);assert ntfy.get_attribute('type')=='password';ntfy.fill('fixture-ntfy_access_token')
   category('Integrations')
   intro=page.get_by_role('heading',name=re.compile('^Local calendar:')).bounding_box()
   select=page.get_by_role('button',name=re.compile('^Calendar service')).bounding_box()
   assert select['y']-(intro['y']+intro['height'])>=20,'calendar instructions touch the floating label'
   provider('caldav')
-  caldav=page.get_by_label(titles['caldav_app_password'],exact=True);caldav.wait_for();assert caldav.get_attribute('type')=='password';caldav.fill('fixture-caldav_app_password');assert_spacing()
+  caldav=field(titles['caldav_app_password']);caldav.wait_for();assert caldav.get_attribute('type')=='password';caldav.fill('fixture-caldav_app_password');assert_spacing()
   provider('google')
-  assert page.get_by_label(titles['caldav_app_password'],exact=True).count()==0
+  assert field(titles['caldav_app_password']).count()==0
   for name in ['google_client_secret','google_refresh_token']:
-   control=page.get_by_label(titles[name],exact=True);control.wait_for();assert control.get_attribute('type')=='password';control.fill('fixture-'+name)
+   control=field(titles[name]);control.wait_for();assert control.get_attribute('type')=='password';control.fill('fixture-'+name)
   assert_spacing()
   category('General')
   page.get_by_role('checkbox',name='Download cover art',exact=True).check()
-  assert page.get_by_label('Navidrome username',exact=True).count()==0
-  assert page.get_by_label('MusicBrainz contact',exact=True).count()==0
-  assert page.get_by_label('Export library ID',exact=True).count()==0
+  theme=page.get_by_role('button',name=re.compile('^Dashboard theme'))
+  theme.click();page.get_by_role('option',name='black',exact=True).click()
+  assert field('Navidrome username').count()==0
+  assert field('MusicBrainz contact').count()==0
+  assert field('Export library ID').count()==0
   category('General')
   page.get_by_role('checkbox',name='Exclude releases already in library',exact=True).check()
   direct=page.get_by_role('checkbox',name='Exclude artists without directly credited music',exact=True)
   assert not direct.is_checked();direct.check()
   assert page.get_by_role('checkbox',name='Match artists without IDs',exact=True).is_visible()
-  assert page.get_by_label('Days ahead',exact=True).is_visible()
-  assert page.get_by_label('Days back',exact=True).is_visible()
+  assert field('Days ahead').is_visible()
+  assert field('Days back').is_visible()
   category('Releases')
   for title in ['Albums','EPs','Singles','Live','Compilations','Demos','Field recordings']:
    assert page.get_by_role('checkbox',name=title,exact=True).count()==1
   page.get_by_role('checkbox',name='Live',exact=True).check()
   page.get_by_role('checkbox',name='Singles',exact=True).check()
-  with page.expect_response(lambda r:r.request.method=='PUT' and '/api/plugin/release-radar' in r.url) as saved:
+  with page.expect_response(lambda r:r.request.method=='PUT' and '/api/plugin/navidrome-upcoming-releases-plugin' in r.url) as saved:
    page.get_by_role('button',name=re.compile(r'^save$',re.I)).click()
   assert saved.value.status==200,'configuration could not be saved without a username'
-  record=api('/api/plugin/release-radar');values=json.loads(record['config'])
+  record=api('/api/plugin/navidrome-upcoming-releases-plugin');values=json.loads(record['config'])
   assert not record['enabled'],'test must not enable outbound integrations'
   for removed in ['username','contact','export_library_id','include_secondary']:assert removed not in values
+  assert values['dashboard_theme']=='black' and values['ntfy_enabled'] is True and values['ntfy_notify_release_day'] is True
   assert values['manual_refresh'] is True and values['exclude_owned'] is True and values['exclude_uncredited'] is True
   assert values['include_live'] is True and values['include_singles'] is True and values['cover_art'] is True
   for name in secret_fields:assert values[name]=='fixture-'+name
   page.reload();page.get_by_role('checkbox',name='Download cover art',exact=True).wait_for()
   assert page.get_by_role('checkbox',name='Refresh releases',exact=True).is_checked()
   page.get_by_role('checkbox',name='Refresh releases',exact=True).uncheck()
-  with page.expect_response(lambda r:r.request.method=='PUT' and '/api/plugin/release-radar' in r.url) as saved_off:
+  with page.expect_response(lambda r:r.request.method=='PUT' and '/api/plugin/navidrome-upcoming-releases-plugin' in r.url) as saved_off:
    page.get_by_role('button',name=re.compile(r'^save$',re.I)).click()
-  assert saved_off.value.status==200 and json.loads(api('/api/plugin/release-radar')['config'])['manual_refresh'] is False
+  assert saved_off.value.status==200 and json.loads(api('/api/plugin/navidrome-upcoming-releases-plugin')['config'])['manual_refresh'] is False
   category('Releases');assert page.get_by_role('checkbox',name='Live',exact=True).is_checked()
-  category('Integrations');assert page.get_by_label(titles['ntfy_access_token'],exact=True).input_value()=='fixture-ntfy_access_token'
+  category('Integrations');assert field(titles['ntfy_access_token']).input_value()=='fixture-ntfy_access_token'
   category('Integrations')
   for name in ['google_client_secret','google_refresh_token']:
-   control=page.get_by_label(titles[name],exact=True);assert control.get_attribute('type')=='password';assert control.input_value()=='fixture-'+name
-  provider('caldav');assert page.get_by_label(titles['caldav_app_password'],exact=True).input_value()=='fixture-caldav_app_password'
+   control=field(titles[name]);assert control.get_attribute('type')=='password';assert control.input_value()=='fixture-'+name
+  provider('caldav');assert field(titles['caldav_app_password']).input_value()=='fixture-caldav_app_password'
   for width in [1280,390]:
    page.set_viewport_size({'width':width,'height':1000})
    if width<600:

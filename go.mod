@@ -1,4 +1,4 @@
-module release-radar
+module github.com/JLS1996/navidrome-upcoming-releases-plugin
 
 go 1.25
 

@@ -9,10 +9,10 @@ import (
 	"time"
 )
 
-const Version = "0.7.1"
+const Version = "0.8.0"
 
 func MusicBrainzUserAgent() string {
-	return "NavidromeReleaseRadar/" + Version + " (https://github.com/JLS1996/navidrome-upcoming-releases-plugin)"
+	return "navidrome-upcoming-releases-plugin/" + Version + " (https://github.com/JLS1996/navidrome-upcoming-releases-plugin)"
 }
 
 var uuidRE = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
@@ -71,6 +71,7 @@ type State struct {
 	Problem             string          `json:"problem,omitempty"`
 }
 type Config struct {
+	Theme             string
 	ExcludeUncredited bool
 	DirectReady       bool
 	DirectCredits     map[string]bool
@@ -92,7 +93,7 @@ type Config struct {
 }
 
 func DefaultConfig() Config {
-	return Config{CalendarNamespace: "release-radar", AheadDays: 90, PastDays: 30, AutoMatch: true, PrimaryTypes: []string{"Album", "EP"}, IncludeStandard: true, Overrides: map[string]string{}, Exclusions: map[string]bool{}}
+	return Config{Theme: "dark", CalendarNamespace: "navidrome-upcoming-releases-plugin", AheadDays: 90, PastDays: 30, AutoMatch: true, PrimaryTypes: []string{"Album", "EP"}, IncludeStandard: true, Overrides: map[string]string{}, Exclusions: map[string]bool{}}
 }
 
 // MusicBrainz release-group types; Live is a secondary type, not a primary one.
@@ -396,4 +397,11 @@ func Visible(r Release, c Config, now time.Time) bool {
 }
 func normalize(s string) string { return strings.ToLower(strings.Join(strings.Fields(s), " ")) }
 
-func (c Config) EventNamespace() string { return c.CalendarNamespace + "\x00" + c.Username }
+// Keep existing calendar IDs stable across the project rename.
+func (c Config) EventNamespace() string {
+	namespace := c.CalendarNamespace
+	if namespace == "navidrome-upcoming-releases-plugin" {
+		namespace = "release-radar"
+	}
+	return namespace + "\x00" + c.Username
+}

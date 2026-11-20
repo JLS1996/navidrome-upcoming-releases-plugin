@@ -19,6 +19,7 @@ type Send func(HTTPRequest) (Response, error)
 type IntegrationConfig struct {
 	Namespace                                                                string
 	NtfyURL, NtfyTopic, NtfyToken                                            string
+	NtfyEnabled, NotifyNew, NotifyUpdates, NotifyReleaseDay                  bool
 	NotifyInitial                                                            bool
 	CalendarProvider                                                         string
 	CalDAVURL, CalDAVUser, CalDAVPassword                                    string
@@ -30,7 +31,7 @@ func safeServiceURL(raw string) bool {
 	return err == nil && u.Scheme == "https" && u.Host != "" && u.User == nil && u.RawQuery == "" && u.Fragment == ""
 }
 func (c IntegrationConfig) Validate() error {
-	if c.NtfyTopic != "" {
+	if c.NtfyEnabled && c.NtfyTopic != "" {
 		if !safeServiceURL(c.NtfyURL) {
 			return fmt.Errorf("ntfy server must be an HTTPS URL without credentials, query or fragment")
 		}
@@ -70,6 +71,7 @@ type DeliveryState struct {
 	Schema         int                     `json:"schema"`
 	NtfyTarget     string                  `json:"ntfyTarget,omitempty"`
 	NtfyReady      bool                    `json:"ntfyReady"`
+	NtfyDays       map[string]bool         `json:"ntfyDays,omitempty"`
 	NtfySeen       map[string]string       `json:"ntfySeen,omitempty"`
 	NextNtfy       int64                   `json:"nextNtfy"`
 	CalendarTarget string                  `json:"calendarTarget,omitempty"`
@@ -87,6 +89,9 @@ func (d *DeliveryState) init() {
 	d.Schema = 1
 	if d.Turn < 0 || d.Turn > 1 {
 		d.Turn = 0
+	}
+	if d.NtfyDays == nil {
+		d.NtfyDays = map[string]bool{}
 	}
 	if d.NtfySeen == nil {
 		d.NtfySeen = map[string]string{}
@@ -151,7 +156,7 @@ func (d *DeliveryState) Step(s State, c Config, ic IntegrationConfig, send Send,
 	return false
 }
 func (d *DeliveryState) ntfyStep(s State, c Config, ic IntegrationConfig, send Send, now time.Time) bool {
-	if ic.NtfyTopic == "" {
+	if !ic.NtfyEnabled || ic.NtfyTopic == "" {
 		delete(d.Problems, "ntfy")
 		return false
 	}
@@ -160,6 +165,7 @@ func (d *DeliveryState) ntfyStep(s State, c Config, ic IntegrationConfig, send S
 		d.NtfyTarget = target
 		d.NtfyReady = false
 		d.NtfySeen = map[string]string{}
+		d.NtfyDays = map[string]bool{}
 		d.NextNtfy = 0
 	}
 	if now.Unix() < d.NextNtfy {
@@ -181,12 +187,22 @@ func (d *DeliveryState) ntfyStep(s State, c Config, ic IntegrationConfig, send S
 	}
 	for _, e := range events {
 		hash := e.Fingerprint()
-		if d.NtfySeen[e.Key] == hash {
+		dayKey := e.Key + "\x00" + e.Date
+		releaseDay := ic.NotifyReleaseDay && e.Date == now.UTC().Format("2006-01-02") && !d.NtfyDays[dayKey]
+		if d.NtfySeen[e.Key] == hash && !releaseDay {
 			continue
 		}
 		kind := "New music release"
-		if _, ok := d.NtfySeen[e.Key]; ok {
+		_, known := d.NtfySeen[e.Key]
+		if known {
 			kind = "Music release updated"
+		}
+		if releaseDay {
+			kind = "Music released today"
+		} else if (!known && !ic.NotifyNew) || (known && !ic.NotifyUpdates) {
+			// A disabled category is acknowledged so enabling it has no backlog.
+			d.NtfySeen[e.Key] = hash
+			return true
 		}
 		message := []rune(e.Summary + "\n" + DateLabel(e.Date))
 		if len(message) > 700 {
@@ -203,6 +219,9 @@ func (d *DeliveryState) ntfyStep(s State, c Config, ic IntegrationConfig, send S
 			d.failure("ntfy", resp, err, now)
 		} else {
 			d.NtfySeen[e.Key] = hash
+			if releaseDay {
+				d.NtfyDays[dayKey] = true
+			}
 			delete(d.Problems, "ntfy")
 		}
 		return true
@@ -515,6 +534,7 @@ func (c IntegrationConfig) ValidParts() (IntegrationConfig, string) {
 		problems = append(problems, "ntfy: "+err.Error())
 	}
 	onlyCalendar := c
+	onlyCalendar.NtfyEnabled = false
 	onlyCalendar.NtfyTopic = ""
 	if err := onlyCalendar.Validate(); err != nil {
 		active.CalendarProvider = "none"

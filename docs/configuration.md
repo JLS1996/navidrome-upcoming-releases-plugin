@@ -32,7 +32,12 @@ The sections appear in this order: **Date window**, **Appearance**,
 Dates use UTC. Changing filters updates cached results without downloading the
 artist catalogs again.
 
-**Download cover art** is under Appearance. See [Cover art](#cover-art) for details.
+**Dashboard theme** offers Bright, Dark and Black under Appearance. Dark is the
+default. It changes only the HTML colors, including the calendar and artwork
+backgrounds. Saving regenerates the report from cached data; refresh or recopy
+the HTML to see the change.
+
+**Download cover art** is also under Appearance. See [Cover art](#cover-art) for details.
 
 **Match artists without IDs** is on by default. It uses cautious exact-name
 matching when an artist has no MusicBrainz ID in its tags. IDs in tags and explicit
@@ -150,7 +155,8 @@ but is excluded from dated calendar events.
 
 The panel above the tabs gives quick instructions for the local report. Calendar
 calendar and notification setup is together in Integrations. Local reports stay in
-`<DataFolder>/plugins/release-radar/storage/`; there is no export-directory setting.
+`<DataFolder>/plugins/<plugin-id>/storage/`; there is no export-directory setting.
+The ID comes from the installed package filename. See [upgrade guidance](installation.md#upgrading-from-release-radar) for existing installations.
 Optional integrations publish release information to ntfy or a configured CalDAV
 or Google Calendar destination. They do not expose the local report files through
 a web endpoint. See [installation](installation.md) for opening or copying files.

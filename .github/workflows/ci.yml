@@ -29,5 +29,5 @@ jobs:
         run: python3 scripts/check_public.py --tracked
       - uses: actions/upload-artifact@v4
         with:
-          name: release-radar-plugin
-          path: dist/release-radar.ndp
+          name: navidrome-upcoming-releases-plugin
+          path: dist/navidrome-upcoming-releases-plugin.ndp

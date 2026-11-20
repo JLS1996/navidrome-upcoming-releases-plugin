@@ -149,6 +149,21 @@ with sync_playwright() as p:
  assert not art.evaluate('document.documentElement.scrollWidth>innerWidth')
  art.locator('#calendar').screenshot(path=str(out/'covers-calendar-mobile.png'))
  art.close()
+ # Each palette must retain offline behavior and readable, fitting artwork cards.
+ for theme,background in [('bright','rgb(245, 247, 251)'),('black','rgb(0, 0, 0)')]:
+  themed=browser.new_page();themed.context.set_offline(True)
+  themed.on('pageerror',lambda e:errors.append(str(e)))
+  themed.set_content((root/('dist/preview-'+theme+'.html')).read_text())
+  assert themed.locator('html').get_attribute('data-theme')==theme
+  assert themed.locator('body').evaluate('(n)=>getComputedStyle(n).backgroundColor')==background
+  assert themed.locator('.release').count()==3
+  for width in [320,390,1280]:
+   themed.set_viewport_size({'width':width,'height':1000})
+   assert not themed.evaluate('document.documentElement.scrollWidth>innerWidth'),theme+' overflows'
+   if width==390:themed.screenshot(path=str(out/(theme+'-mobile.png')),full_page=True)
+  themed.screenshot(path=str(out/(theme+'-desktop.png')),full_page=True)
+  themed.locator('#calendar-view').click();assert themed.locator('#calendar').is_visible()
+  themed.close()
  # Capture a real navigation while fulfilling locally: no public request is sent.
  navigation=browser.new_page();navigation.context.set_offline(True)
  navigation.set_content((root/'dist/preview.html').read_text())

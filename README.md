@@ -1,4 +1,4 @@
-# Upcoming Releases for Navidrome
+# navidrome-upcoming-releases-plugin
 
 > [!IMPORTANT]
 > **AI development notice**
@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/JLS1996/navidrome-upcoming-releases-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/JLS1996/navidrome-upcoming-releases-plugin/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-0.7.1-green)
+![Version](https://img.shields.io/badge/version-0.8.0-green)
 ![Navidrome](https://img.shields.io/badge/tested%20with-Navidrome%200.64.2-orange)
 
 Keep up with new music from the artists already in your Navidrome library.
@@ -20,20 +20,20 @@ Keep up with new music from the artists already in your Navidrome library.
 - Finds upcoming and recent releases using the free MusicBrainz API.
 - Lets you choose release types, hide owned releases and skip artists without standalone library credits.
 - Generates an offline HTML dashboard with search, filters and a calendar that fits mobile screens.
-- Optionally embeds cover art for offline viewing, with a subtle card background.
-- Exports `.ics` files and optionally sends notifications or syncs a calendar.
+- Offers bright, dark and black themes, plus optional offline cover art.
+- Exports `.ics`, syncs calendars and offers selectable ntfy discovery, update and release-day alerts.
 - Saves progress, retries failed lookups and updates events when release dates change.
 
 **No additional web server, public page, or file-download endpoint.** Reports stay in local files; external integrations only connect to destinations you configure. Notifications and calendar sync are off by default. No paid API is required.
 
 ## Get started
 
-1. [Download the plugin](https://github.com/JLS1996/navidrome-upcoming-releases-plugin/raw/main/dist/release-radar.ndp) or [build it](docs/development.md#build).
-2. Copy it into Navidrome's plugins folder and rescan plugins.
+1. [Download the plugin](https://github.com/JLS1996/navidrome-upcoming-releases-plugin/releases/latest/download/navidrome-upcoming-releases-plugin.ndp) or [build it](docs/development.md#build).
+2. Copy it into Navidrome's plugins folder and rescan plugins. [Upgrading an existing installation?](docs/installation.md#upgrading-from-release-radar)
 3. Grant access to one user and the intended libraries, then enable it.
 4. Open the generated HTML file locally. [Installation and file access →](docs/installation.md)
 
-Local files are created under `<DataFolder>/plugins/release-radar/storage/`. Running Navidrome as a different OS user may require host-side file sharing.
+Local files are created under `<DataFolder>/plugins/navidrome-upcoming-releases-plugin/storage/`. Running Navidrome as a different OS user may require host-side file sharing.
 
 ## Documentation
 
