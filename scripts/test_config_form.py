@@ -55,10 +55,10 @@ try:
   page.get_by_text('Unable to render configuration form.',exact=False).wait_for()
   assert page.get_by_text('unknown format "password"',exact=False).count()>0,'did not reproduce the reported AJV failure'
   write_package(fixed);api('/api/plugin/rescan','POST')
-  page.reload();page.get_by_label('Artist ID overrides',exact=True).wait_for()
+  page.reload();page.get_by_role('checkbox',name='Download cover art',exact=True).wait_for()
   assert page.get_by_text('Unable to render configuration form.',exact=False).count()==0
   titles={name:fixed['config']['schema']['properties'][name]['title'] for name in secret_fields}
-  categories=['General','Releases','Notifications','Calendar']
+  categories=['General','Releases','Integrations','Matching']
   def category(name):
    try:page.get_by_role('tab',name=name,exact=True).click(timeout=5000)
    except Exception:
@@ -96,13 +96,22 @@ try:
    assert files and tabs and access and permission
    assert files['y']<tabs['y']<access['y']<permission['y'],'information was not placed outside tabs above permission cards'
   assert page.get_by_role('tab',name='Local files',exact=True).count()==0
-  assert page.get_by_role('heading',name=re.compile('^Alerts and calendar sync are optional')).is_visible()
-  category('Calendar')
+  toggle=page.get_by_role('checkbox',name='Refresh releases',exact=True)
+  assert toggle.count()==1 and toggle.locator('xpath=ancestor::*[contains(@class,"MuiSwitch-root")]').count()>0
+  toggle.check()
+  assert toggle.bounding_box()['y']<page.get_by_role('tablist').bounding_box()['y']
+  assert page.get_by_role('tab',name='Matching',exact=True).get_attribute('aria-selected')=='true'
+  category('Matching');assert page.get_by_label('Artist ID overrides',exact=True).is_visible()
+  category('Integrations')
   assert page.get_by_label(titles['caldav_app_password'],exact=True).count()==0
   assert page.get_by_label(titles['google_client_secret'],exact=True).count()==0
-  category('Notifications')
+  category('Integrations')
   ntfy=page.get_by_label(titles['ntfy_access_token'],exact=True);assert ntfy.get_attribute('type')=='password';ntfy.fill('fixture-ntfy_access_token')
-  category('Calendar');provider('caldav')
+  category('Integrations')
+  intro=page.get_by_role('heading',name=re.compile('^Local calendar:')).bounding_box()
+  select=page.get_by_role('button',name=re.compile('^Calendar service')).bounding_box()
+  assert select['y']-(intro['y']+intro['height'])>=20,'calendar instructions touch the floating label'
+  provider('caldav')
   caldav=page.get_by_label(titles['caldav_app_password'],exact=True);caldav.wait_for();assert caldav.get_attribute('type')=='password';caldav.fill('fixture-caldav_app_password');assert_spacing()
   provider('google')
   assert page.get_by_label(titles['caldav_app_password'],exact=True).count()==0
@@ -125,12 +134,18 @@ try:
   record=api('/api/plugin/release-radar');values=json.loads(record['config'])
   assert not record['enabled'],'test must not enable outbound integrations'
   for removed in ['username','contact','export_library_id','include_secondary']:assert removed not in values
+  assert values['manual_refresh'] is True
   assert values['include_live'] is True and values['include_singles'] is True and values['cover_art'] is True
   for name in secret_fields:assert values[name]=='fixture-'+name
-  page.reload();page.get_by_label('Artist ID overrides',exact=True).wait_for()
+  page.reload();page.get_by_role('checkbox',name='Download cover art',exact=True).wait_for()
+  assert page.get_by_role('checkbox',name='Refresh releases',exact=True).is_checked()
+  page.get_by_role('checkbox',name='Refresh releases',exact=True).uncheck()
+  with page.expect_response(lambda r:r.request.method=='PUT' and '/api/plugin/release-radar' in r.url) as saved_off:
+   page.get_by_role('button',name=re.compile(r'^save$',re.I)).click()
+  assert saved_off.value.status==200 and json.loads(api('/api/plugin/release-radar')['config'])['manual_refresh'] is False
   category('Releases');assert page.get_by_role('checkbox',name='Live',exact=True).is_checked()
-  category('Notifications');assert page.get_by_label(titles['ntfy_access_token'],exact=True).input_value()=='fixture-ntfy_access_token'
-  category('Calendar')
+  category('Integrations');assert page.get_by_label(titles['ntfy_access_token'],exact=True).input_value()=='fixture-ntfy_access_token'
+  category('Integrations')
   for name in ['google_client_secret','google_refresh_token']:
    control=page.get_by_label(titles[name],exact=True);assert control.get_attribute('type')=='password';assert control.input_value()=='fixture-'+name
   provider('caldav');assert page.get_by_label(titles['caldav_app_password'],exact=True).input_value()=='fixture-caldav_app_password'
@@ -143,9 +158,9 @@ try:
     page.keyboard.press('Escape')
     drawer.wait_for(state='hidden')
    for name in categories:category(name);assert_spacing()
-   category('Calendar');provider('google');assert_spacing()
+   category('Integrations');provider('google');assert_spacing()
    page.screenshot(path=str(base/('settings-'+str(width)+'.png')),full_page=True,animations='disabled')
-   category('Calendar');provider('caldav')
+   category('Integrations');provider('caldav')
   assert page.get_by_text('Unable to render configuration form.',exact=False).count()==0
   browser.close()
  print('PASS: categorized settings render, desktop/mobile spacing, conditional calendar fields, masked credentials, and saving/reloading with automatic username selection.')

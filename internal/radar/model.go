@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const Version = "0.4.0"
+const Version = "0.5.0"
 
 func MusicBrainzUserAgent() string {
 	return "NavidromeReleaseRadar/" + Version + " (https://github.com/JLS1996/navidrome-upcoming-releases-plugin)"
@@ -49,7 +49,9 @@ type State struct {
 	MusicBrainzFailures int     `json:"musicBrainzFailures,omitempty"`
 	MusicBrainzProblem  string  `json:"musicBrainzProblem,omitempty"`
 	IntegrationProblem  string  `json:"integrationProblem,omitempty"`
-	RefreshToken        string  `json:"refreshToken"`
+	RefreshToggle       *bool   `json:"refreshToggle,omitempty"`
+	RefreshPending      bool    `json:"refreshPending,omitempty"`
+	NextDiscovery       int64   `json:"nextDiscovery,omitempty"`
 	RenderedAt          int64   `json:"renderedAt"`
 	ViewConfig          string  `json:"viewConfig"`
 	Schema              int     `json:"schema"`
@@ -113,6 +115,22 @@ func (c Config) Fingerprint() string {
 	}{c.Username, c.Overrides, c.Exclusions, c.AutoMatch})
 	return string(b)
 }
+
+// ApplyRefresh treats both saved transitions as one refresh request. The first
+// value establishes a baseline so upgrades do not restart a completed catalog.
+func (s *State) ApplyRefresh(value bool) bool {
+	if s.RefreshToggle == nil {
+		s.RefreshToggle = &value
+		return false
+	}
+	if *s.RefreshToggle == value {
+		return false
+	}
+	s.RefreshToggle = &value
+	s.RefreshPending = true
+	s.NextDiscovery = 0
+	return true
+}
 func (s *State) Reconcile(artists []Artist, c Config, scope string, now time.Time) {
 	old := map[string]Entry{}
 	// Never retain another user's or another library selection's results.
@@ -170,6 +188,8 @@ func (s *State) Reconcile(artists []Artist, c Config, scope string, now time.Tim
 	s.Entries = entries
 	s.Cursor = 0
 	s.DiscoveredAt = now.Unix()
+	s.RefreshPending = false
+	s.NextDiscovery = 0
 	s.Problem = ""
 }
 func ParseArtists(raw string) ([]Artist, error) {

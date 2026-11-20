@@ -67,7 +67,7 @@ func TestArtworkRedirectDownloadCacheAndDisabledRender(t *testing.T) {
 	}
 	c.Covers = restored.Images()
 	b, _ := Render(s, c, testNow)
-	if !strings.Contains(string(b), `class="release has-cover"`) || !strings.Contains(string(b), `class="release-cover"`) {
+	if !strings.Contains(string(b), `class="release has-cover has-artwork"`) || !strings.Contains(string(b), `class="release-cover"`) {
 		t.Fatal("cached art absent from card")
 	}
 	c.CoverArt = false

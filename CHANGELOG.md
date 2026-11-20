@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.0
+
+- Separate configuration instructions into paragraphs with space before fields and groups.
+- Replace the refresh text field with a switch below Info; both saved transitions request a check.
+- Add a final Matching tab with artist-ID and exclusion guidance.
+- Combine notification and calendar controls in Integrations.
+- Use a neutral charcoal-and-blue dashboard theme with cover-derived ambient lighting.
+- Enlarge artwork, put Last checked timestamps on a new line, and add missing-cover placeholders.
+- Limit type and timing filters to values actually present in the report.
+- Keep manual discovery requests independent of MusicBrainz retry cooldowns.
+
 ## 0.4.0
 
 - Replace the long Generated files panel with concise Info and in-tab setup guidance.

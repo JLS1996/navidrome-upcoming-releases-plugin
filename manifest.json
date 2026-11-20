@@ -1,7 +1,7 @@
 {
   "name": "Release Radar",
   "author": "Release Radar contributors",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Upcoming music releases with an offline list/calendar dashboard, .ics export, optional ntfy alerts and CalDAV or Google Calendar sync.",
   "permissions": {
     "storage": {
@@ -74,12 +74,6 @@
           "title": "Excluded artist IDs",
           "default": "[]",
           "description": "JSON array of Navidrome artist IDs to skip."
-        },
-        "refresh_token": {
-          "type": "string",
-          "title": "Refresh request",
-          "default": "",
-          "description": "Change this value to request a new release check. This is not an authentication token."
         },
         "calendar_namespace": {
           "type": "string",
@@ -251,6 +245,12 @@
           "title": "Download cover art",
           "default": false,
           "description": "Fetch small Cover Art Archive thumbnails and embed them in the offline HTML. Adds network requests, a private cache and larger reports. Missing covers are skipped."
+        },
+        "manual_refresh": {
+          "type": "boolean",
+          "title": "Refresh releases",
+          "default": false,
+          "description": "Change either way and Save to request a new check. The switch position is not an enabled/disabled state."
         }
       }
     },
@@ -263,19 +263,46 @@
           "elements": [
             {
               "type": "Label",
-              "text": "Finds upcoming and recent releases from your library. Checks resume automatically and refresh daily."
+              "text": "Finds upcoming and recent releases from your library. Checks refresh daily and resume after restarts."
             },
             {
               "type": "Label",
-              "text": "Open plugins/release-radar/storage/upcoming-releases.html from Navidrome\u2019s data folder in a browser. Refresh or copy a new version for updates."
+              "text": "\u00a0"
             },
             {
               "type": "Label",
-              "text": "Tap an artist or release title to open MusicBrainz. Choose release types and optional covers in the settings below."
+              "text": "Open plugins/release-radar/storage/upcoming-releases.html in a browser. Refresh or copy a new version to see updates."
             },
             {
               "type": "Label",
-              "text": "Alerts and calendar sync are optional; setup is in their tabs. Keep working JSON files private."
+              "text": "\u00a0"
+            },
+            {
+              "type": "Label",
+              "text": "Artist and release links open MusicBrainz. Optional covers are in General; alerts and calendar setup are in Integrations."
+            },
+            {
+              "type": "Label",
+              "text": "\u00a0"
+            },
+            {
+              "type": "Label",
+              "text": "Keep working JSON files private. Flip the switch below in either direction, then Save, to request a fresh check."
+            },
+            {
+              "type": "Label",
+              "text": "\u00a0"
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/manual_refresh",
+              "options": {
+                "toggle": true
+              }
+            },
+            {
+              "type": "Label",
+              "text": "\u00a0"
             }
           ]
         },
@@ -289,40 +316,6 @@
               "elements": [
                 {
                   "type": "Group",
-                  "label": "Artist matching",
-                  "elements": [
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/auto_match"
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/artist_overrides",
-                      "options": {
-                        "multi": true
-                      }
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/excluded_artists",
-                      "options": {
-                        "multi": true
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "Group",
-                  "label": "Manual refresh",
-                  "elements": [
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/refresh_token"
-                    }
-                  ]
-                },
-                {
-                  "type": "Group",
                   "label": "Appearance",
                   "elements": [
                     {
@@ -330,6 +323,10 @@
                       "scope": "#/properties/cover_art"
                     }
                   ]
+                },
+                {
+                  "type": "Label",
+                  "text": "\u00a0"
                 }
               ]
             },
@@ -350,6 +347,10 @@
                       "scope": "#/properties/past_days"
                     }
                   ]
+                },
+                {
+                  "type": "Label",
+                  "text": "\u00a0"
                 },
                 {
                   "type": "Group",
@@ -378,12 +379,20 @@
                   ]
                 },
                 {
+                  "type": "Label",
+                  "text": "\u00a0"
+                },
+                {
                   "type": "Group",
                   "label": "Standard and special releases",
                   "elements": [
                     {
                       "type": "Label",
                       "text": "Choose release formats above. For releases with secondary tags, any selected tag below is enough to include the release."
+                    },
+                    {
+                      "type": "Label",
+                      "text": "\u00a0"
                     },
                     {
                       "type": "Control",
@@ -420,6 +429,10 @@
                   ]
                 },
                 {
+                  "type": "Label",
+                  "text": "\u00a0"
+                },
+                {
                   "type": "Group",
                   "label": "Spoken and other recordings",
                   "elements": [
@@ -444,12 +457,16 @@
                       "scope": "#/properties/include_field_recordings"
                     }
                   ]
+                },
+                {
+                  "type": "Label",
+                  "text": "\u00a0"
                 }
               ]
             },
             {
               "type": "Category",
-              "label": "Notifications",
+              "label": "Integrations",
               "elements": [
                 {
                   "type": "Group",
@@ -458,6 +475,10 @@
                     {
                       "type": "Label",
                       "text": "Subscribe to your topic in an ntfy client first. Leave Topic blank to disable alerts. Use an unguessable topic or a server with restricted read access for personal release information."
+                    },
+                    {
+                      "type": "Label",
+                      "text": "\u00a0"
                     },
                     {
                       "type": "Control",
@@ -479,13 +500,11 @@
                       "scope": "#/properties/ntfy_notify_initial"
                     }
                   ]
-                }
-              ]
-            },
-            {
-              "type": "Category",
-              "label": "Calendar",
-              "elements": [
+                },
+                {
+                  "type": "Label",
+                  "text": "\u00a0"
+                },
                 {
                   "type": "Group",
                   "label": "Calendar destination",
@@ -493,6 +512,10 @@
                     {
                       "type": "Label",
                       "text": "Local calendar: use Save or share calendar in the HTML, or import music-releases.ics. Imports are snapshots; choose a provider below for automatic sync."
+                    },
+                    {
+                      "type": "Label",
+                      "text": "\u00a0"
                     },
                     {
                       "type": "Control",
@@ -505,12 +528,20 @@
                   ]
                 },
                 {
+                  "type": "Label",
+                  "text": "\u00a0"
+                },
+                {
                   "type": "Group",
                   "label": "CalDAV credentials",
                   "elements": [
                     {
                       "type": "Label",
                       "text": "Create a dedicated releases calendar. Enter its full HTTPS collection URL and your provider\u2019s app credentials. A generic account/discovery URL will not work; redirects are not followed."
+                    },
+                    {
+                      "type": "Label",
+                      "text": "\u00a0"
                     },
                     {
                       "type": "Control",
@@ -539,6 +570,19 @@
                   }
                 },
                 {
+                  "type": "Label",
+                  "text": "\u00a0",
+                  "rule": {
+                    "effect": "SHOW",
+                    "condition": {
+                      "scope": "#/properties/calendar_provider",
+                      "schema": {
+                        "const": "caldav"
+                      }
+                    }
+                  }
+                },
+                {
                   "type": "Group",
                   "label": "Google Calendar credentials",
                   "elements": [
@@ -548,7 +592,15 @@
                     },
                     {
                       "type": "Label",
+                      "text": "\u00a0"
+                    },
+                    {
+                      "type": "Label",
                       "text": "On your computer, run scripts/google_authorize.py with --client-json client.json --output google-oauth.json. Authorize the calendar account, then copy the saved client ID, secret and refresh token below. OAuth apps in Testing mode may need periodic reauthorization."
+                    },
+                    {
+                      "type": "Label",
+                      "text": "\u00a0"
                     },
                     {
                       "type": "Control",
@@ -582,6 +634,121 @@
                       }
                     }
                   }
+                },
+                {
+                  "type": "Label",
+                  "text": "\u00a0",
+                  "rule": {
+                    "effect": "SHOW",
+                    "condition": {
+                      "scope": "#/properties/calendar_provider",
+                      "schema": {
+                        "const": "google"
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "Category",
+              "label": "Matching",
+              "elements": [
+                {
+                  "type": "Group",
+                  "label": "Automatic matching",
+                  "elements": [
+                    {
+                      "type": "Label",
+                      "text": "MusicBrainz artist IDs in your music tags are the most reliable match. Automatic matching is a cautious fallback when tags have no ID."
+                    },
+                    {
+                      "type": "Label",
+                      "text": "\u00a0"
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/auto_match"
+                    }
+                  ]
+                },
+                {
+                  "type": "Label",
+                  "text": "\u00a0"
+                },
+                {
+                  "type": "Group",
+                  "label": "Fix an artist match",
+                  "elements": [
+                    {
+                      "type": "Label",
+                      "text": "Open the report\u2019s attention section and copy the Navidrome artist ID shown there."
+                    },
+                    {
+                      "type": "Label",
+                      "text": "\u00a0"
+                    },
+                    {
+                      "type": "Label",
+                      "text": "Find the correct artist on MusicBrainz. Copy the UUID at the end of its artist-page URL, not a release or release-group ID."
+                    },
+                    {
+                      "type": "Label",
+                      "text": "\u00a0"
+                    },
+                    {
+                      "type": "Label",
+                      "text": "Enter a JSON mapping from Navidrome ID to MusicBrainz artist UUID. Example:"
+                    },
+                    {
+                      "type": "Label",
+                      "text": "\u00a0"
+                    },
+                    {
+                      "type": "Label",
+                      "text": "{\"artist-id-from-report\":\"11111111-2222-4333-8444-555555555555\"}"
+                    },
+                    {
+                      "type": "Label",
+                      "text": "\u00a0"
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/artist_overrides",
+                      "options": {
+                        "multi": true
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "Label",
+                  "text": "\u00a0"
+                },
+                {
+                  "type": "Group",
+                  "label": "Exclude artists",
+                  "elements": [
+                    {
+                      "type": "Label",
+                      "text": "Enter Navidrome IDs as a JSON array, for example [\"artist-id-from-report\"]. Save changes to apply matching and exclusion settings."
+                    },
+                    {
+                      "type": "Label",
+                      "text": "\u00a0"
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/excluded_artists",
+                      "options": {
+                        "multi": true
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "Label",
+                  "text": "\u00a0"
                 }
               ]
             }
@@ -597,7 +764,15 @@
             },
             {
               "type": "Label",
+              "text": "\u00a0"
+            },
+            {
+              "type": "Label",
               "text": "MusicBrainz lookups require no personal account or email. They use the plugin\u2019s project identification."
+            },
+            {
+              "type": "Label",
+              "text": "\u00a0"
             }
           ]
         }

@@ -1,6 +1,6 @@
 # Configuration
 
-The settings tabs are **General**, **Releases**, **Notifications** and **Calendar**.
+The settings tabs are **General**, **Releases**, **Integrations** and **Matching**.
 A short Info panel stays above the tabs; library access guidance appears
 below the tabs, immediately before Navidrome’s permission cards.
 
@@ -14,16 +14,27 @@ libraries and the libraries granted to the plugin.
 MusicBrainz lookups need no account, API key or personal email. Requests identify
 the plugin by its project URL and respect MusicBrainz's rate limits.
 
+## Manual refresh
+
+The **Refresh releases** switch sits below Info, above the tabs. Flip it in either
+direction and press **Save**. Each saved transition requests one new check; the
+position is not an enabled/disabled state. Restarting with the same saved value
+does not request another refresh. Existing results stay visible while checks run,
+and unfinished pages resume.
+
 ## General
 
-Artist matching, manual refresh and the optional cover-art setting are in this tab.
+This tab contains the optional cover-art setting.
+
+## Matching
+
+Matching is the last tab. It contains tag-ID guidance, override examples and exclusions.
 
 | Setting | Default | Use |
 |---|---|---|
 | Match artists without IDs | On | Match exact artist names when tags have no MusicBrainz artist ID |
 | Artist ID overrides | `{}` | JSON object mapping Navidrome artist IDs to MusicBrainz artist UUIDs |
 | Excluded artist IDs | `[]` | JSON array of Navidrome artist IDs to skip |
-| Refresh request | Blank | Change this value to start a new check cycle |
 
 For an ambiguous match, use the Navidrome ID shown in the report's attention
 section and the UUID from the correct MusicBrainz artist page:
@@ -45,7 +56,9 @@ Archive and Internet Archive, separate from MusicBrainz lookups.
 
 Images are cached privately in `covers.json` and embedded in the HTML. The copied
 report needs no image server or browser image requests. Release cards and
-selected-day entries show covers on the right with a subtle blurred background.
+selected-day entries show larger covers on the right. Each available cover creates
+its own ambient blur and gradient; missing artwork gets a `?` tile while covers
+are enabled. The dashboard uses a neutral charcoal-and-blue theme.
 Missing covers are skipped, and artwork failures do not block release checks or
 calendar sync. Turning the setting off removes images from the generated report;
 the private cache is retained for reuse.
@@ -82,8 +95,8 @@ selectable and off by default:
 
 A release must match a selected format. If it has secondary tags, **any** selected
 tag includes it. For example, Albums + Live includes live albums; turn Standard
-releases off to show only the selected special types. The report's type filter
-can further narrow the displayed results without changing exported files.
+releases off to show only the selected special types. The report's type and timing filters list only values present in that report.
+They narrow the displayed results without changing exported files.
 
 These categories follow [MusicBrainz release-group types](https://musicbrainz.org/doc/Release_Group/Type).
 A release with only a year or month remains visible when it overlaps your window,
@@ -92,13 +105,13 @@ but is excluded from dated calendar events.
 ## Info
 
 The panel above the tabs gives quick instructions for the local report. Calendar
-provider setup is inside the Calendar tab; notification setup is in Notifications. Local reports stay in
+calendar and notification setup is together in Integrations. Local reports stay in
 `<DataFolder>/plugins/release-radar/storage/`; there is no export-directory setting.
 Optional integrations publish release information to ntfy or a configured CalDAV
 or Google Calendar destination. They do not expose the local report files through
 a web endpoint. See [installation](installation.md) for opening or copying files.
 
-## Notifications and Calendar
+## Integrations
 
 Optional integrations are disabled by default. Provider-specific credentials
 appear only after selecting a calendar provider. See [setup instructions](integrations.md).

@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/JLS1996/navidrome-upcoming-releases-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/JLS1996/navidrome-upcoming-releases-plugin/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-0.4.0-green)
+![Version](https://img.shields.io/badge/version-0.5.0-green)
 ![Navidrome](https://img.shields.io/badge/tested%20with-Navidrome%200.64.2-orange)
 
 Keep up with new music from the artists already in your Navidrome library.

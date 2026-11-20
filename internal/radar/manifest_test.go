@@ -13,6 +13,7 @@ type uiElement struct {
 	Label   string `json:"label"`
 	Options struct {
 		Format string `json:"format"`
+		Toggle bool   `json:"toggle"`
 	} `json:"options"`
 	Elements []uiElement `json:"elements"`
 }
@@ -56,6 +57,19 @@ func TestManifestCredentialControlsRenderWithoutUnknownFormats(t *testing.T) {
 	if m.Config.UI.Elements[0].Type != "Group" || m.Config.UI.Elements[0].Label != "Info" || m.Config.UI.Elements[1].Type != "Categorization" || m.Config.UI.Elements[2].Label != "Library access" {
 		t.Fatal("generated file and access information must surround the tabs")
 	}
+	foundRefresh := false
+	for _, node := range m.Config.UI.Elements[0].Elements {
+		if node.Scope == "#/properties/manual_refresh" {
+			foundRefresh = node.Options.Toggle
+		}
+	}
+	if !foundRefresh || m.Config.Schema.Properties["manual_refresh"].Type != "boolean" {
+		t.Fatal("refresh must be a switch below Info")
+	}
+	cats := m.Config.UI.Elements[1].Elements
+	if cats[len(cats)-1].Label != "Matching" {
+		t.Fatal("Matching must be the final tab")
+	}
 	controls := map[string]string{}
 	labels := map[string]bool{}
 	var walk func(uiElement)
@@ -77,12 +91,12 @@ func TestManifestCredentialControlsRenderWithoutUnknownFormats(t *testing.T) {
 		}
 	}
 	walk(m.Config.UI)
-	for _, label := range []string{"General", "Releases", "Notifications", "Calendar"} {
+	for _, label := range []string{"General", "Releases", "Integrations", "Matching"} {
 		if !labels[label] {
 			t.Fatal("missing settings category", label)
 		}
 	}
-	for _, removed := range []string{"username", "contact", "export_library_id", "include_secondary"} {
+	for _, removed := range []string{"username", "contact", "export_library_id", "include_secondary", "refresh_token"} {
 		if _, exists := m.Config.Schema.Properties[removed]; exists {
 			t.Fatal("removed field remains", removed)
 		}

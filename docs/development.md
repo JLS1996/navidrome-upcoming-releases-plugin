@@ -69,7 +69,8 @@ Use installed Chromium, or install Playwright's browser. The suite renders the
 HTML offline and checks list/calendar filters, navigation, uncertain dates and
 calendar download, mobile file sharing and its text fallback. Calendar checks
 cover all seven columns at widths from 320 to 1280 pixels, selected-day details,
-long titles, multiple releases, keyboard navigation across month boundaries, and
+larger covers, placeholders, available-only filters, long titles, multiple releases,
+keyboard navigation across month boundaries, and
 calendar downloads after saving and reopening the HTML. Artwork tests use original
 synthetic images and verify embedded covers, subtle backgrounds, and artist-link
 navigation without sending requests to public MusicBrainz pages. Sharing tests

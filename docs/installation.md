@@ -14,7 +14,8 @@
 
 The first report appears as checks start. Large libraries take longer to finish;
 lookups run gradually and resume after restarts. Artist discovery refreshes daily.
-Use **General → Refresh request** to request a new cycle.
+To request a new cycle, flip **Refresh releases** below Info in either direction
+and press **Save**. Matching and exclusions are in the final **Matching** tab.
 
 ## Opening the report
 

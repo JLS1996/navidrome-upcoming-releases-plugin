@@ -27,7 +27,7 @@ func Load(dir string) (State, error) {
 	if s.Schema != 1 {
 		return s, fmt.Errorf("unsupported state schema %d", s.Schema)
 	}
-	if s.MusicBrainzFailures < 0 || s.MusicBrainzFailures > 7 || s.NextHTTP < 0 {
+	if s.MusicBrainzFailures < 0 || s.MusicBrainzFailures > 7 || s.NextHTTP < 0 || s.NextDiscovery < 0 {
 		return s, fmt.Errorf("state.json contains invalid service retry metadata")
 	}
 	for i := range s.Entries {

@@ -1,5 +1,7 @@
 # Calendars and notifications
 
+Notification and calendar controls share the **Integrations** tab in Navidrome.
+
 ## Local calendar export
 
 Local report files remain in plugin storage. When you enable an integration,

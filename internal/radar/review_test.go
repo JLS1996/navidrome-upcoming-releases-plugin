@@ -12,10 +12,8 @@ import (
 func TestReleaseSelectorsCoverMusicBrainzTypes(t *testing.T) {
 	c := DefaultConfig()
 	b, _ := Render(published(), c, testNow)
-	for _, option := range append(append([]ReleaseTypeOption{}, PrimaryReleaseTypes...), SecondaryReleaseTypes...) {
-		if !strings.Contains(string(b), `<option value="`+option.Value+`">`) {
-			t.Fatal("HTML filter missing type", option.Value)
-		}
+	if !strings.Contains(string(b), `<option value="Album">`) || strings.Contains(string(b), `<option value="Single">`) || strings.Contains(string(b), `<option value="Today">`) {
+		t.Fatal("dashboard filters include unavailable values")
 	}
 	for _, primary := range PrimaryReleaseTypes {
 		r := Release{ID: releaseID, Type: primary.Value, Date: "2026-12-04"}
@@ -183,6 +181,31 @@ func TestInvalidPersistedRetryMetadataIsRejected(t *testing.T) {
 		}
 		if _, err := Load(dir); err == nil {
 			t.Fatal("invalid retry metadata accepted")
+		}
+	}
+}
+
+func TestRefreshSwitchBothTransitionsSurviveRestarts(t *testing.T) {
+	s := ready()
+	s.Entries[0].Phase = "done"
+	s.Entries[0].Releases = []Release{{ID: releaseID, Title: "Keep"}}
+	if s.ApplyRefresh(false) || s.RefreshPending {
+		t.Fatal("initial value must establish a baseline")
+	}
+	for _, value := range []bool{true, false} {
+		if !s.ApplyRefresh(value) || !s.RefreshPending {
+			t.Fatal("saved toggle did not request a refresh", value)
+		}
+		b, _ := json.Marshal(s)
+		if err := json.Unmarshal(b, &s); err != nil {
+			t.Fatal(err)
+		}
+		s.Reconcile([]Artist{s.Entries[0].Artist}, cfg(), s.Scope, testNow)
+		if s.RefreshPending || s.Entries[0].Releases[0].Title != "Keep" {
+			t.Fatal("refresh lost the prior snapshot")
+		}
+		if s.ApplyRefresh(value) {
+			t.Fatal("unchanged switch repeated a refresh")
 		}
 	}
 }

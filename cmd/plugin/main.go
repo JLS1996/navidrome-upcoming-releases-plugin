@@ -164,25 +164,19 @@ func (p *plugin) tick() error {
 		s = radar.State{Schema: 1}
 		return finish(fmt.Errorf("assign at least one library shared by the selected user and plugin"))
 	}
-	// Retry discovery failures at most once per minute, not every two seconds.
-	refreshToken := str("refresh_token", "")
-	if s.RefreshToken != refreshToken {
-		s.DiscoveredAt = 0
-		s.RefreshToken = refreshToken
-	}
-	if s.Scope != scope || now.Unix()-s.DiscoveredAt >= 86400 {
-		if s.NextHTTP > now.Unix() {
-			return nil
-		}
+	refreshChanged := s.ApplyRefresh(str("manual_refresh", "false") == "true")
+	if (s.RefreshPending || now.Unix()-s.DiscoveredAt >= 86400) && now.Unix() >= s.NextDiscovery {
 		artists, err := discover(c.Username, ids)
 		if err != nil {
-			s.NextHTTP = now.Unix() + 60
+			s.NextDiscovery = now.Unix() + 60
 			return finish(err)
 		}
 		s.Reconcile(artists, c, scope, now)
 	}
 	previousProblem := s.Problem
-	s.Problem = ""
+	if s.NextDiscovery == 0 {
+		s.Problem = ""
+	}
 	view := radar.Version + "/" + fmt.Sprintf("%d/%d/%v/%v/%t", c.AheadDays, c.PastDays, c.PrimaryTypes, c.SecondaryTypes, c.IncludeStandard) + fmt.Sprint(c.CoverArt) + ic.Fingerprint()
 	viewChanged := s.ViewConfig != view
 	s.ViewConfig = view
@@ -255,7 +249,7 @@ func (p *plugin) tick() error {
 	}
 
 	// Avoid rewriting the dashboard every idle tick. Render at least hourly for date windows.
-	if !changed && !deliveryChanged && !artworkRequest && !artworkChanged && previousArtworkProblem == s.ArtworkProblem && !viewChanged && previousProblem == "" && previousIntegrationProblem == s.IntegrationProblem && s.DiscoveredAt != now.Unix() && now.Unix()-s.RenderedAt < 3600 {
+	if !refreshChanged && !changed && !deliveryChanged && !artworkRequest && !artworkChanged && previousArtworkProblem == s.ArtworkProblem && !viewChanged && previousProblem == "" && previousIntegrationProblem == s.IntegrationProblem && s.DiscoveredAt != now.Unix() && now.Unix()-s.RenderedAt < 3600 {
 		return nil
 	}
 	return finish(nil)

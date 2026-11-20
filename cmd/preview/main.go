@@ -33,6 +33,9 @@ func main() {
 		c.Covers = map[string]string{}
 		ids := []string{"11111111-1111-4111-8111-111111111111", "22222222-2222-4222-8222-222222222222", "33333333-3333-4333-8333-333333333333"}
 		for i, id := range ids {
+			if i == 1 {
+				continue
+			}
 			im := image.NewRGBA(image.Rect(0, 0, 250, 250))
 			for y := 0; y < 250; y++ {
 				for x := 0; x < 250; x++ {

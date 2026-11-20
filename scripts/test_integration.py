@@ -165,7 +165,7 @@ try:
  assert len(requests)==before,'upgrade re-fetched a completed artist';assert completed()
  assert 'day-release-list' in (storage/'upcoming-releases.html').read_text(),'upgrade left the old report layout in place'
  # Force a daily cycle in the test state while the plugin is disabled.
- version[0]=2;update(config=settings(refresh_token='cycle-two'))
+ version[0]=2;update(config=settings(manual_refresh=True))
  def updated():
   s=completed()
   return s if s and s['entries'][0]['releases'][0]['title'].startswith('[fixture] Updated release 2') else None
@@ -193,7 +193,7 @@ try:
  update(config=settings(calendar_provider='google',google_calendar_id='fixture@example.com',google_client_id='fixture-client',google_client_secret='fixture-secret',google_refresh_token='fixture-refresh'))
  wait_for(lambda:len(google)==2)
  assert len(token_requests)==1
- version[0]=3;update(config=settings(refresh_token='cycle-three'))
+ version[0]=3;update(config=settings(manual_refresh=False))
  wait_for(lambda:any(event.get('summary','').startswith('Radiohead — [fixture] Updated release 3') for event in google.values()))
  assert len(google)==2,'Google duplicated a date-changed event'
  wait_for(lambda:len(notifications)==2)
@@ -221,7 +221,7 @@ try:
  wait_for(lambda:call('/api/plugin/release-radar').get('enabled') is False)
  before_revoked=len(requests);time.sleep(3);assert len(requests)==before_revoked,'requests continued after revocation'
  # Navidrome disables the runtime before it can clear old disk snapshots.
- results={'navidrome':'0.64.2','wasm_runtime':True,'storage_and_atomic_rename':True,'real_library_discovery':True,'http_429_backoff':True,'http_503_global_backoff_and_restart':True,'pagination_and_deduplication':True,'metadata_escaping_in_wasm':True,'restart_persistence':True,'changed_release_replaces_snapshot':True,'display_config_refresh':True,'idle_upgrade_refresh_preserves_lookup_cache':True,'library_revocation_disables_plugin':True,'old_disk_snapshot_requires_manual_removal':True,'storage_only_reports':True,'storage_file_mode':oct(storage_mode),'legacy_identity_and_contact_ignored':True,'ntfy_baseline_and_update_alerts':True,'ntfy_notifications':len(notifications),'caldav_create_and_date_update':True,'google_token_refresh_create_patch_delete':True,'unrelated_calendar_event_preserved':True,'ics_file_export':True,'offline_artwork_redirect_cache_and_toggle':True,'wasm_png_and_jpeg_thumbnails':True,'fixture_requests':len(requests),'user_library_revocation_clears_cache':True,'automatic_granted_user_selection':True,'ambiguous_grants_stop_processing':True}
+ results={'navidrome':'0.64.2','wasm_runtime':True,'storage_and_atomic_rename':True,'real_library_discovery':True,'http_429_backoff':True,'http_503_global_backoff_and_restart':True,'pagination_and_deduplication':True,'metadata_escaping_in_wasm':True,'restart_persistence':True,'changed_release_replaces_snapshot':True,'display_config_refresh':True,'manual_refresh_both_saved_transitions':True,'idle_upgrade_refresh_preserves_lookup_cache':True,'library_revocation_disables_plugin':True,'old_disk_snapshot_requires_manual_removal':True,'storage_only_reports':True,'storage_file_mode':oct(storage_mode),'legacy_identity_and_contact_ignored':True,'ntfy_baseline_and_update_alerts':True,'ntfy_notifications':len(notifications),'caldav_create_and_date_update':True,'google_token_refresh_create_patch_delete':True,'unrelated_calendar_event_preserved':True,'ics_file_export':True,'offline_artwork_redirect_cache_and_toggle':True,'wasm_png_and_jpeg_thumbnails':True,'fixture_requests':len(requests),'user_library_revocation_clears_cache':True,'automatic_granted_user_selection':True,'ambiguous_grants_stop_processing':True}
  (ROOT/'dist/integration-results.json').write_text(json.dumps(results,indent=2));print(json.dumps(results,indent=2))
 finally:
  stop();fixture.shutdown()

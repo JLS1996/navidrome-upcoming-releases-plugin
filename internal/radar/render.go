@@ -61,16 +61,21 @@ func Render(s State, c Config, now time.Time) ([]byte, error) {
 	var rows, issues strings.Builder
 	for _, r := range p.Rows {
 		class, style, cover := "release", "", ""
-		if r.Cover != "" {
+		if c.CoverArt {
 			class += " has-cover"
-			style = ` style="--cover-art:url('` + r.Cover + `')"`
-			cover = `<a class="cover-link" href="` + esc(r.URL) + `" rel="noreferrer" aria-label="Open ` + esc(r.Title) + ` on MusicBrainz"><img class="release-cover" src="` + r.Cover + `" alt="Cover art for ` + esc(r.Title) + `" width="250" height="250" loading="lazy" decoding="async"></a>`
+			if r.Cover != "" {
+				class += " has-artwork"
+				style = ` style="--cover-art:url('` + r.Cover + `')"`
+				cover = `<a class="cover-link" href="` + esc(r.URL) + `" rel="noreferrer" aria-label="Open ` + esc(r.Title) + ` on MusicBrainz"><img class="release-cover" src="` + r.Cover + `" alt="Cover art for ` + esc(r.Title) + `" width="250" height="250" loading="lazy" decoding="async"></a>`
+			} else {
+				cover = `<a class="cover-link" href="` + esc(r.URL) + `" rel="noreferrer" aria-label="Open ` + esc(r.Title) + ` on MusicBrainz"><span class="release-cover cover-placeholder" role="img" aria-label="No cover available">?</span></a>`
+			}
 		}
 		checked := r.CheckedAt
 		if t, err := time.Parse(time.RFC3339, checked); err == nil {
 			checked = t.UTC().Format("2 Jan 2006, 15:04 UTC")
 		}
-		fmt.Fprintf(&rows, `<article class="%s"%s data-type="%s" data-secondary="%s" data-period="%s" data-date="%s"><div class="release-date date">%s<br><span class="meta">%s</span></div><div class="release-body"><div class="artist"><a href="%s" rel="noreferrer">%s</a></div><h2><a href="%s" rel="noreferrer">%s</a></h2><div class="meta">Last checked: %s</div></div><span class="tag">%s</span>%s</article>`, class, style, esc(r.Type), esc(r.Secondary), esc(r.Status), esc(r.Date), esc(r.DateLabel), esc(r.Status), esc(r.URL), esc(r.Artist), esc(r.URL), esc(r.Title), esc(checked), esc(r.TypeLabel), cover)
+		fmt.Fprintf(&rows, `<article class="%s"%s data-type="%s" data-secondary="%s" data-period="%s" data-date="%s"><div class="release-date date">%s<br><span class="meta">%s</span></div><div class="release-body"><div class="artist"><a href="%s" rel="noreferrer">%s</a></div><h2><a href="%s" rel="noreferrer">%s</a></h2><div class="meta">Last checked:<br><time>%s</time></div></div><span class="tag">%s</span>%s</article>`, class, style, esc(r.Type), esc(r.Secondary), esc(r.Status), esc(r.Date), esc(r.DateLabel), esc(r.Status), esc(r.URL), esc(r.Artist), esc(r.URL), esc(r.Title), esc(checked), esc(r.TypeLabel), cover)
 	}
 	if len(p.Issues) > 0 {
 		summary := fmt.Sprintf("%d artists need attention", len(p.Issues))
@@ -117,12 +122,29 @@ func Render(s State, c Config, now time.Time) ([]byte, error) {
 	if len(events) == 0 {
 		emptyNote = `<p class="notice">No dated calendar events yet. Importing this calendar will add nothing. Checks may still be running, or no exact release dates fall within your filters.</p>`
 	}
-	var typeOptions strings.Builder
+	var typeOptions, periodOptions strings.Builder
+	availableTypes, availablePeriods := map[string]bool{}, map[string]bool{}
+	for _, r := range p.Rows {
+		availableTypes[r.Type] = true
+		for _, tag := range strings.Split(r.Secondary, "|") {
+			if tag != "" {
+				availableTypes[tag] = true
+			}
+		}
+		availablePeriods[r.Status] = true
+	}
 	for _, option := range append(append([]ReleaseTypeOption{}, PrimaryReleaseTypes...), SecondaryReleaseTypes...) {
-		fmt.Fprintf(&typeOptions, `<option value="%s">%s</option>`, esc(option.Value), esc(option.Value))
+		if availableTypes[option.Value] {
+			fmt.Fprintf(&typeOptions, `<option value="%s">%s</option>`, esc(option.Value), esc(option.Value))
+		}
+	}
+	for _, period := range []string{"Upcoming", "Today", "Recent", "Date uncertain"} {
+		if availablePeriods[period] {
+			fmt.Fprintf(&periodOptions, `<option value="%s">%s</option>`, period, period)
+		}
 	}
 	// NewReplacer makes a single pass: inserted metadata is never interpreted as a template.
-	result := strings.NewReplacer("@@TYPE_OPTIONS@@", typeOptions.String(), "@@CALENDAR_EMPTY_NOTE@@", emptyNote, "@@CALENDAR_TEXT@@", esc(string(ics)), "@@ICS@@", base64.StdEncoding.EncodeToString(ics), "@@CALENDAR_STATS@@", esc(CalendarStats(s, c, c.EventNamespace(), now)), "@@TODAY@@", now.UTC().Format("2006-01-02"), "@@COUNT@@", fmt.Sprint(len(p.Rows)), "@@COMPLETE@@", fmt.Sprint(p.Complete), "@@ARTISTS@@", fmt.Sprint(p.Artists), "@@PENDING@@", fmt.Sprint(p.Pending), "@@PAST@@", fmt.Sprint(p.PastDays), "@@AHEAD@@", fmt.Sprint(p.AheadDays), "@@GENERATED@@", esc(p.Generated), "@@PROBLEM@@", problem, "@@ROWS@@", rows.String(), "@@ISSUES@@", issues.String(), "@@EMPTYHIDDEN@@", hidden).Replace(dashboard)
+	result := strings.NewReplacer("@@PERIOD_OPTIONS@@", periodOptions.String(), "@@TYPE_OPTIONS@@", typeOptions.String(), "@@CALENDAR_EMPTY_NOTE@@", emptyNote, "@@CALENDAR_TEXT@@", esc(string(ics)), "@@ICS@@", base64.StdEncoding.EncodeToString(ics), "@@CALENDAR_STATS@@", esc(CalendarStats(s, c, c.EventNamespace(), now)), "@@TODAY@@", now.UTC().Format("2006-01-02"), "@@COUNT@@", fmt.Sprint(len(p.Rows)), "@@COMPLETE@@", fmt.Sprint(p.Complete), "@@ARTISTS@@", fmt.Sprint(p.Artists), "@@PENDING@@", fmt.Sprint(p.Pending), "@@PAST@@", fmt.Sprint(p.PastDays), "@@AHEAD@@", fmt.Sprint(p.AheadDays), "@@GENERATED@@", esc(p.Generated), "@@PROBLEM@@", problem, "@@ROWS@@", rows.String(), "@@ISSUES@@", issues.String(), "@@EMPTYHIDDEN@@", hidden).Replace(dashboard)
 	return []byte(result), nil
 }
 

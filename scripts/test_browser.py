@@ -14,6 +14,8 @@ with sync_playwright() as p:
  assert page.locator('.release').count()==3
  assert page.locator('.release:visible').count()==3
  assert page.locator('#release-count').inner_text()=='3'
+ assert page.locator('#type option[value="Broadcast"]').count()==0
+ assert page.locator('#period option[value="Today"]').count()==0
  assert page.locator('h1').inner_text()=='Your music.\nSomething to look forward to.'
  page.locator('#type').select_option('Live');assert page.locator('.release:visible').count()==1
  assert 'Live' in page.locator('.release:visible .tag').inner_text()
@@ -129,13 +131,17 @@ with sync_playwright() as p:
  art=browser.new_page(viewport={'width':1280,'height':1000});art.context.set_offline(True)
  art.on('pageerror',lambda e:errors.append(str(e)));art.on('request',lambda r:requests.append(r.url))
  art.set_content((root/'dist/preview-covers.html').read_text())
- art.wait_for_function("[...document.querySelectorAll('.release-cover')].every(n=>n.complete&&n.naturalWidth>0)")
+ art.wait_for_function("[...document.querySelectorAll('img.release-cover')].every(n=>n.complete&&n.naturalWidth>0)")
  assert art.locator('.release.has-cover').count()==3
+ assert art.locator('.cover-placeholder').count()==1
+ assert art.locator('.cover-placeholder').inner_text()=='?'
+ assert art.locator('img.release-cover').count()==2
+ assert art.locator('.meta time').first.evaluate('(n)=>n.previousElementSibling.tagName')=='BR'
  for width in [320,375,390,430,768,1280]:
   art.set_viewport_size({'width':width,'height':1000})
   assert not art.evaluate('document.documentElement.scrollWidth>innerWidth'),'cover cards overflow at '+str(width)
   assert art.locator('.release').evaluate_all('(nodes)=>nodes.every(n=>{const a=n.querySelector(".release-cover").getBoundingClientRect(),b=n.querySelector(".release-body").getBoundingClientRect(),r=n.getBoundingClientRect();return a.right<=r.right&&a.left>=b.right+6})'),'cover overlaps release text'
-  assert art.locator('.release.has-cover').first.evaluate('(n)=>getComputedStyle(n,"::before").backgroundImage.includes("data:image/png")')
+  assert art.locator('.release.has-artwork').first.evaluate('(n)=>getComputedStyle(n,"::before").backgroundImage.includes("data:image/png")')
   if width==390:art.screenshot(path=str(out/'covers-mobile.png'),full_page=True)
  art.screenshot(path=str(out/'covers-desktop.png'),full_page=True)
  art.set_viewport_size({'width':390,'height':1000});art.locator('#calendar-view').click();art.locator('#next-month').click();art.locator('.day-select[data-date="2026-12-04"]').click()
