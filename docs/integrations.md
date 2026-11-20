@@ -7,6 +7,13 @@ The HTML **Download calendar (.ics)** button embeds the same calendar in the pag
 so it works even when you copy only the HTML file. It exports the complete report's
 configured date/type window, independently of the browser search/month filters.
 
+On mobile, open the HTML in a full browser rather than a file/email preview. The
+page uses a Blob download and offers **Share calendar** when the browser supports
+sharing files. If neither works, expand **Show calendar text**, copy it into a file
+named `music-releases.ics`, and import that file. The separately generated `.ics`
+file can also be copied directly. A calendar with zero dated events is valid but
+imports nothing; wait for checks to finish and confirm releases fall in the window.
+
 Events are all-day, with stable UIDs and an exclusive next-day end. Year/month-only
 dates are omitted rather than assigned a guessed day. The `.ics` file is a snapshot:
 importing it does not establish an automatically refreshing subscription. Calendar

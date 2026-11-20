@@ -1,8 +1,10 @@
 package radar
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"html"
 	"os"
 	"path/filepath"
 	"strings"
@@ -99,7 +101,7 @@ func TestMalformedPagesAndTransportErrors(t *testing.T) {
 	}
 	s := ready()
 	s.Step(func(string) (Response, error) { return Response{}, fmt.Errorf("offline") }, cfg(), testNow)
-	if s.Entries[0].Failures != 1 {
+	if s.MusicBrainzFailures != 1 || s.Entries[0].Failures != 0 {
 		t.Fatal(s)
 	}
 }
@@ -300,5 +302,100 @@ func TestUsernameComesOnlyFromGrantedAccess(t *testing.T) {
 	c := DefaultConfig()
 	if err := c.Validate(); err != nil {
 		t.Fatal("blank username must be valid before grants are resolved", err)
+	}
+}
+
+func TestTransientOutageRetriesGloballyAndRecovers(t *testing.T) {
+	for _, status := range []int{408, 429, 500, 502, 503, 504} {
+		t.Run(fmt.Sprint(status), func(t *testing.T) {
+			s := ready()
+			s.Entries[0].Offset = 1
+			s.Entries[0].Pending = []Release{{ID: releaseID, Title: "Pending"}}
+			s.Entries[0].Releases = []Release{{ID: releaseID, Title: "Keep"}}
+			other := s.Entries[0]
+			other.Artist.ID = "other"
+			s.Entries = append(s.Entries, other)
+			at := testNow
+			for attempt := 1; attempt <= 9; attempt++ {
+				calls := 0
+				fetch := func(string) (Response, error) { calls++; return Response{Status: status}, nil }
+				if !s.Step(fetch, cfg(), at) || calls != 1 {
+					t.Fatal("expected one request")
+				}
+				wait := int64(30) << min(attempt-1, 6)
+				if s.NextHTTP != at.Unix()+wait || s.Cursor != 0 || s.Entries[0].Phase != "releases" || s.Entries[0].Failures != 0 || s.Entries[1].Problem != "" {
+					t.Fatalf("backoff or queue lost: %+v", s)
+				}
+				if s.Step(fetch, cfg(), at.Add(time.Duration(wait-1)*time.Second)) || calls != 1 {
+					t.Fatal("requested during global cooldown")
+				}
+				// A restart must preserve the queue-wide failure streak and its deadline.
+				b, _ := json.Marshal(s)
+				if err := json.Unmarshal(b, &s); err != nil {
+					t.Fatal(err)
+				}
+				at = time.Unix(s.NextHTTP, 0)
+			}
+			b, _ := Render(s, cfg(), at)
+			if !strings.Contains(string(b), "automatic retry after") || strings.Contains(string(b), "artists need attention") {
+				t.Fatal("service outage presented as artist problem")
+			}
+			s.Step(func(u string) (Response, error) {
+				if !strings.Contains(u, "offset=1") {
+					t.Fatal("pagination restarted")
+				}
+				return page([]Release{{ID: artistID, Title: "Recovered"}}, 2, 1), nil
+			}, cfg(), at)
+			if s.MusicBrainzFailures != 0 || s.MusicBrainzProblem != "" || s.Entries[0].Phase != "done" || len(s.Entries[0].Releases) != 2 {
+				t.Fatal("outage did not recover")
+			}
+		})
+	}
+}
+func TestOldTransientErrorsResumeWithoutDiscardingSnapshots(t *testing.T) {
+	s := ready()
+	s.Schema = 1
+	s.Entries[0].Phase = "error"
+	s.Entries[0].Failures = 5
+	s.Entries[0].RetryAt = testNow.Unix() + 300
+	s.Entries[0].Problem = "MusicBrainz returned HTTP 503; will retry on the next library refresh"
+	s.Entries[0].Offset = 100
+	s.Entries[0].Releases = []Release{{ID: releaseID, Title: "Keep"}}
+	b, _ := json.Marshal(s)
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "state.json"), b, 0600); err != nil {
+		t.Fatal(err)
+	}
+	restored, err := Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e := restored.Entries[0]
+	if e.Phase != "releases" || e.Failures != 0 || e.RetryAt != 0 || e.Problem != "" || e.Offset != 100 || len(e.Releases) != 1 {
+		t.Fatal("old transient failure did not migrate")
+	}
+}
+
+func TestEmptyReportHasValidDownloadAndTextFallback(t *testing.T) {
+	b, err := Render(State{Schema: 1}, cfg(), testNow)
+	if err != nil {
+		t.Fatal(err)
+	}
+	document := string(b)
+	const prefix = "data:text/calendar;charset=utf-8;base64,"
+	_, payload, ok := strings.Cut(document, prefix)
+	if !ok {
+		t.Fatal("missing embedded calendar")
+	}
+	encoded, _, _ := strings.Cut(payload, `"`)
+	calendar, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(string(calendar), "BEGIN:VCALENDAR\r\n") || !strings.HasSuffix(string(calendar), "END:VCALENDAR\r\n") || strings.Contains(string(calendar), "BEGIN:VEVENT") {
+		t.Fatal("invalid empty calendar")
+	}
+	if !strings.Contains(document, "Importing this calendar will add nothing.") || !strings.Contains(document, html.EscapeString(string(calendar))) || !strings.Contains(document, "Show calendar text") {
+		t.Fatal("empty calendar has no text fallback")
 	}
 }

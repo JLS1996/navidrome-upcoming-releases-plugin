@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-const Version = "0.2.3"
+const Version = "0.2.4"
 
 var uuidRE = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
 
@@ -39,17 +39,19 @@ type Entry struct {
 	Failures     int       `json:"failures,omitempty"`
 }
 type State struct {
-	IntegrationProblem string  `json:"integrationProblem,omitempty"`
-	RefreshToken       string  `json:"refreshToken"`
-	RenderedAt         int64   `json:"renderedAt"`
-	ViewConfig         string  `json:"viewConfig"`
-	Schema             int     `json:"schema"`
-	DiscoveredAt       int64   `json:"discoveredAt"`
-	Scope              string  `json:"scope"`
-	Entries            []Entry `json:"entries"`
-	Cursor             int     `json:"cursor"`
-	NextHTTP           int64   `json:"nextHttp"`
-	Problem            string  `json:"problem,omitempty"`
+	MusicBrainzFailures int     `json:"musicBrainzFailures,omitempty"`
+	MusicBrainzProblem  string  `json:"musicBrainzProblem,omitempty"`
+	IntegrationProblem  string  `json:"integrationProblem,omitempty"`
+	RefreshToken        string  `json:"refreshToken"`
+	RenderedAt          int64   `json:"renderedAt"`
+	ViewConfig          string  `json:"viewConfig"`
+	Schema              int     `json:"schema"`
+	DiscoveredAt        int64   `json:"discoveredAt"`
+	Scope               string  `json:"scope"`
+	Entries             []Entry `json:"entries"`
+	Cursor              int     `json:"cursor"`
+	NextHTTP            int64   `json:"nextHttp"`
+	Problem             string  `json:"problem,omitempty"`
 }
 type Config struct {
 	CalendarNamespace string

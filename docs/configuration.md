@@ -37,3 +37,9 @@ User Access grants are authoritative. No granted users stops processing; several
 granted users require selecting one or an explicit granted username. With multiple grants, the plugin never picks an administrator automatically or
 combines different users’ libraries.
 Existing explicit usernames remain supported and must be in the granted list.
+
+MusicBrainz HTTP 408/429/5xx responses and network failures pause all lookups.
+Retries start at 30 seconds, double to a maximum of 32 minutes, and respect longer
+`Retry-After` delays (up to 24 hours). The cooldown survives restarts. The report
+shows the next retry time; cached releases and unfinished pages are preserved.
+These temporary failures do not require artist overrides.

@@ -72,6 +72,14 @@ func Render(s State, c Config, now time.Time) ([]byte, error) {
 		}
 		issues.WriteString("</ul></details>")
 	}
+	if s.MusicBrainzProblem != "" {
+		retry := time.Unix(s.NextHTTP, 0).UTC().Format("2 Jan 2006, 15:04:05 UTC")
+		status := s.MusicBrainzProblem + ". Checks paused; automatic retry after " + retry + ". Existing results are kept."
+		if p.Problem != "" {
+			p.Problem += " · "
+		}
+		p.Problem += status
+	}
 	problem := ""
 	if s.IntegrationProblem != "" {
 		if p.Problem != "" {
@@ -86,7 +94,13 @@ func Render(s State, c Config, now time.Time) ([]byte, error) {
 	if len(p.Rows) > 0 {
 		hidden = "hidden"
 	}
+	events := Events(s, c, c.EventNamespace(), now, true)
+	ics := CalendarICS(events, now)
+	emptyNote := ""
+	if len(events) == 0 {
+		emptyNote = `<p class="notice">No dated calendar events yet. Importing this calendar will add nothing. Checks may still be running, or no exact release dates fall within your filters.</p>`
+	}
 	// NewReplacer makes a single pass: inserted metadata is never interpreted as a template.
-	result := strings.NewReplacer("@@ICS@@", base64.StdEncoding.EncodeToString(CalendarICS(Events(s, c, c.EventNamespace(), now, true), now)), "@@CALENDAR_STATS@@", esc(CalendarStats(s, c, c.EventNamespace(), now)), "@@TODAY@@", now.UTC().Format("2006-01-02"), "@@COUNT@@", fmt.Sprint(len(p.Rows)), "@@COMPLETE@@", fmt.Sprint(p.Complete), "@@ARTISTS@@", fmt.Sprint(p.Artists), "@@PENDING@@", fmt.Sprint(p.Pending), "@@PAST@@", fmt.Sprint(p.PastDays), "@@AHEAD@@", fmt.Sprint(p.AheadDays), "@@GENERATED@@", esc(p.Generated), "@@PROBLEM@@", problem, "@@ROWS@@", rows.String(), "@@ISSUES@@", issues.String(), "@@EMPTYHIDDEN@@", hidden).Replace(dashboard)
+	result := strings.NewReplacer("@@CALENDAR_EMPTY_NOTE@@", emptyNote, "@@CALENDAR_TEXT@@", esc(string(ics)), "@@ICS@@", base64.StdEncoding.EncodeToString(ics), "@@CALENDAR_STATS@@", esc(CalendarStats(s, c, c.EventNamespace(), now)), "@@TODAY@@", now.UTC().Format("2006-01-02"), "@@COUNT@@", fmt.Sprint(len(p.Rows)), "@@COMPLETE@@", fmt.Sprint(p.Complete), "@@ARTISTS@@", fmt.Sprint(p.Artists), "@@PENDING@@", fmt.Sprint(p.Pending), "@@PAST@@", fmt.Sprint(p.PastDays), "@@AHEAD@@", fmt.Sprint(p.AheadDays), "@@GENERATED@@", esc(p.Generated), "@@PROBLEM@@", problem, "@@ROWS@@", rows.String(), "@@ISSUES@@", issues.String(), "@@EMPTYHIDDEN@@", hidden).Replace(dashboard)
 	return []byte(result), nil
 }

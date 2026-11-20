@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -24,6 +26,26 @@ func Load(dir string) (State, error) {
 	}
 	if s.Schema != 1 {
 		return s, fmt.Errorf("unsupported state schema %d", s.Schema)
+	}
+	for i := range s.Entries {
+		e := &s.Entries[i]
+		// Recover entries written by versions that exhausted artist retries
+		// during a temporary outage; preserve pages and committed releases.
+		status := 0
+		if suffix, ok := strings.CutPrefix(e.Problem, "MusicBrainz returned HTTP "); ok {
+			if fields := strings.Fields(strings.ReplaceAll(suffix, ";", " ")); len(fields) > 0 {
+				status, _ = strconv.Atoi(fields[0])
+			}
+		}
+		if transientStatus(status) || strings.HasPrefix(e.Problem, "MusicBrainz request failed:") {
+			if e.Phase == "error" {
+				e.Phase = "match"
+				if e.ResolvedMBID != "" {
+					e.Phase = "releases"
+				}
+			}
+			e.Failures, e.RetryAt, e.Problem = 0, 0, ""
+		}
 	}
 	for _, e := range s.Entries {
 		switch e.Phase {

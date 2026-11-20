@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.4
+
+- Back off across the whole MusicBrainz queue for transient service/network failures.
+- Keep retrying temporary failures automatically, preserving pagination and snapshots.
+- Show a service retry notice and recover saved transient artist errors on upgrade.
+- Use Blob calendar downloads with optional mobile file sharing and a text fallback.
+- Test repeated 429/503 failures, restart recovery, mobile sharing and fallback paths.
+
 ## 0.2.3
 
 - Organize settings into Library, Releases, Local files, Notifications and Calendar tabs.

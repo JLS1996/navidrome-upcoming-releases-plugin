@@ -1,7 +1,7 @@
 {
   "name": "Release Radar",
   "author": "Release Radar contributors",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Upcoming music releases with an offline list/calendar dashboard, .ics export, optional ntfy alerts and CalDAV or Google Calendar sync.",
   "permissions": {
     "storage": {

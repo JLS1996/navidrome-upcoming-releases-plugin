@@ -44,18 +44,21 @@ func (s *State) Step(fetch Fetch, c Config, now time.Time) bool {
 		}
 		resp, err := fetch(endpoint)
 		if err != nil {
-			s.fail(e, "MusicBrainz request failed: "+err.Error(), now, 0)
+			s.pauseMusicBrainz("MusicBrainz could not be reached", idx, now, 0)
 			return true
 		}
 		if resp.Status != 200 {
 			retry := RetryDelay(resp.Headers, now)
-			s.fail(e, fmt.Sprintf("MusicBrainz returned HTTP %d", resp.Status), now, retry)
-			// Rate limiting or downtime pauses ALL artists, not just this one.
-			if resp.Status == 429 || resp.Status == 503 {
-				s.NextHTTP = e.RetryAt
+			message := fmt.Sprintf("MusicBrainz returned HTTP %d", resp.Status)
+			if transientStatus(resp.Status) {
+				s.pauseMusicBrainz(message, idx, now, retry)
+			} else {
+				s.MusicBrainzFailures, s.MusicBrainzProblem = 0, ""
+				s.fail(e, message, now, retry)
 			}
 			return true
 		}
+		s.MusicBrainzFailures, s.MusicBrainzProblem = 0, ""
 		if e.Phase == "match" {
 			err = e.match(resp.Body)
 		} else {
@@ -70,6 +73,19 @@ func (s *State) Step(fetch Fetch, c Config, now time.Time) bool {
 		return true
 	}
 	return false
+}
+
+// Transient service failures share one persisted backoff across the whole queue.
+// Keep the same page pending and retry indefinitely, without marking artists bad.
+func transientStatus(status int) bool {
+	return status == 408 || status == 429 || (status >= 500 && status <= 599)
+}
+func (s *State) pauseMusicBrainz(message string, cursor int, now time.Time, delay int64) {
+	s.MusicBrainzFailures = min(max(s.MusicBrainzFailures, 0)+1, 7)
+	backoff := int64(30) << (s.MusicBrainzFailures - 1)
+	s.NextHTTP = now.Unix() + max(backoff, delay)
+	s.Cursor = cursor
+	s.MusicBrainzProblem = message
 }
 func (s *State) fail(e *Entry, message string, now time.Time, delay int64) {
 	e.Failures++

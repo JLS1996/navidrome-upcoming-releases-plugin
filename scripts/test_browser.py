@@ -19,7 +19,7 @@ with sync_playwright() as p:
  page.locator('#search').fill('');page.locator('#type').select_option('EP');assert page.locator('.release:visible').count()==1
  page.locator('#period').select_option('Upcoming');assert page.locator('.release:visible').count()==0
  page.locator('#type').select_option('');page.locator('#period').select_option('Date uncertain');assert page.locator('.release:visible').count()==1
- page.locator('#period').select_option('');page.locator('summary').click();assert page.get_by_text('Multiple artists share this name.',exact=False).is_visible()
+ page.locator('#period').select_option('');page.get_by_text('1 artists need attention',exact=True).click();assert page.get_by_text('Multiple artists share this name.',exact=False).is_visible()
  assert not page.evaluate('document.documentElement.scrollWidth > innerWidth')
  # Calendar is entirely local and keeps uncertain dates off the day grid.
  page.locator('#calendar-view').click();assert page.locator('#calendar').is_visible()
@@ -34,6 +34,14 @@ with sync_playwright() as p:
  with page.expect_download() as download:
   page.locator('#calendar-download').click()
  data=pathlib.Path(download.value.path()).read_bytes()
+ assert page.locator('#calendar-download').get_attribute('href').startswith('blob:')
+ assert page.locator('#download-status').inner_text()
+ page.locator('#calendar-fallback summary').click()
+ text=page.locator('#calendar-text').input_value()
+ assert text.replace('\r\n','\n')==data.decode().replace('\r\n','\n')
+ page.locator('#calendar-text').focus()
+ assert page.locator('#calendar-text').evaluate('(n)=>n.selectionEnd-n.selectionStart')==len(text)
+ page.locator('#calendar-fallback summary').click()
  assert data.startswith(b'BEGIN:VCALENDAR\r\n') and data.count(b'BEGIN:VEVENT')==2
  assert b'Unknown day' not in data
  page.screenshot(path=str(out/'calendar-desktop.png'),full_page=True)
@@ -46,8 +54,26 @@ with sync_playwright() as p:
  page.locator('#calendar-view').click()
  assert not page.evaluate('document.documentElement.scrollWidth > innerWidth')
  page.screenshot(path=str(out/'calendar-mobile.png'),full_page=True)
+ # Simulate a device with file sharing, then a preview that rejects sharing.
+ mobile=browser.new_page(viewport={'width':390,'height':844})
+ # set_content does not run context init scripts, so install the fixture explicitly.
+ mobile.evaluate("window.fixtureShared=[];Object.defineProperty(navigator,'canShare',{configurable:true,value:()=>true});Object.defineProperty(navigator,'share',{configurable:true,value:async(d)=>{window.fixtureShared.push({name:d.files[0].name,text:await d.files[0].text()})}})")
+ mobile.set_content((root/'dist/preview.html').read_text())
+ assert mobile.locator('#calendar-share').is_visible()
+ mobile.locator('#calendar-share').click()
+ mobile.wait_for_function('window.fixtureShared.length===1')
+ shared=mobile.evaluate('window.fixtureShared[0]')
+ assert shared['name']=='music-releases.ics' and shared['text']==data.decode()
+ mobile.evaluate("Object.defineProperty(navigator,'share',{value:async()=>{throw new Error('fixture unsupported preview')}})")
+ mobile.locator('#calendar-share').click()
+ assert mobile.locator('#calendar-text').is_visible()
+ assert 'Sharing is unavailable' in mobile.locator('#download-status').inner_text()
+ with mobile.expect_download() as download:
+  mobile.locator('#calendar-download').click()
+ assert pathlib.Path(download.value.path()).read_bytes()==data
+ mobile.close()
  assert not errors,errors
  assert not [u for u in requests if u.startswith(('http:','https:'))],requests
  browser.close()
- (out/'results.json').write_text(json.dumps({'file_protocol':'blocked by managed Chromium policy; rendered offline from identical HTML instead','release_count':3,'filters':True,'empty_state':True,'responsive':True,'month_calendar':True,'uncertain_dates_separate':True,'ics_download':True,'page_errors':errors,'network_requests':requests},indent=2))
+ (out/'results.json').write_text(json.dumps({'file_protocol':'blocked by managed Chromium policy; rendered offline from identical HTML instead','release_count':3,'filters':True,'empty_state':True,'responsive':True,'month_calendar':True,'uncertain_dates_separate':True,'ics_download':True,'calendar_text_fallback':True,'mobile_share_and_fallback':True,'page_errors':errors,'network_requests':requests},indent=2))
  print('PASS: offline list and calendar, shared filters, uncertain dates, ICS download, desktop/mobile layout; no external requests or JavaScript errors.')

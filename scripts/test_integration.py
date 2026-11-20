@@ -12,7 +12,7 @@ for d in ['music','data/plugins','cache']:(base/d).mkdir(parents=True,exist_ok=T
 mbid='a74b1b7f-71a5-4011-9441-d0b5e4122711'
 rid='11111111-2222-4333-8444-555555555555'
 subprocess.run(['ffmpeg','-hide_banner','-loglevel','error','-f','lavfi','-i','sine=frequency=440:duration=1','-metadata','artist=Radiohead','-metadata','album_artist=Radiohead','-metadata','album=Integration fixture','-metadata','title=Generated test tone','-metadata','MUSICBRAINZ_ARTISTID='+mbid,'-metadata','MUSICBRAINZ_ALBUMARTISTID='+mbid,str(base/'music/test.flac')],check=True)
-requests=[];version=[1];rate_limit=[True]
+requests=[];version=[1];rate_limit=[429,503]
 notifications=[];caldav={};google={};token_requests=[];calendar_writes=[]
 
 class Handler(http.server.BaseHTTPRequestHandler):
@@ -31,8 +31,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
    if key not in google:return self.reply(404)
    return self.reply(200,json.dumps(google[key]).encode())
   q=parse_qs(urlsplit(self.path).query);offset=int(q.get('offset',['0'])[0]);requests.append({'at':time.time(),'path':self.path})
-  if rate_limit[0]:
-   rate_limit[0]=False;return self.reply(429,headers={'Retry-After':'3'})
+  if rate_limit:
+   return self.reply(rate_limit.pop(0),headers={'Retry-After':'3'})
   date=(datetime.date.today()+datetime.timedelta(days=10+version[0])).isoformat()
   group={'id':rid,'title':'[fixture] Updated release '+str(version[0])+' <script>window.pwned=1</script>','first-release-date':date,'primary-type':'Album'}
   body=json.dumps({'release-group-count':2,'release-group-offset':offset,'release-groups':[group]}).encode()
@@ -127,7 +127,11 @@ try:
   r=call('/rest/getArtists?'+urlencode(p,doseq=True));return r['subsonic-response']['artists'].get('index')
  wait_for(scanned)
  update(config=settings(),allUsers=True,allLibraries=True,allowWriteAccess=True,enabled=True)
- first=wait_for(completed,90);assert len(first['entries'][0]['releases'])==1
+ wait_for(lambda:state().get('musicBrainzFailures')==2,90)
+ paused=state();assert paused['entries'][0]['phase']=='releases' and not paused['entries'][0].get('problem')
+ assert 'automatic retry after' in (storage/'upcoming-releases.html').read_text()
+ before=len(requests);stop();start();time.sleep(3);assert len(requests)==before,'service cooldown lost after restart'
+ first=wait_for(completed,120);assert len(first['entries'][0]['releases'])==1
  wait_for(lambda:len(owned_caldav())==1 and deliveries()['ntfyReady'])
  assert not notifications,'initial notification backlog was not suppressed'
  assert (storage/'music-releases.ics').exists() and (base/'music/music-releases.ics').exists()
@@ -136,8 +140,9 @@ try:
  # WASI creates 0600 regardless of requested mode: record, do not claim cross-user access.
  html=(storage/'upcoming-releases.html').read_text();assert '[fixture] Updated release 1' in html and '&lt;script&gt;window.pwned=1&lt;/script&gt;' in html
  assert '<script>window.pwned=1</script>' not in html
- assert len(requests)==3,requests
+ assert len(requests)==4,requests
  assert requests[1]['at']-requests[0]['at']>=29,'minimum exponential backoff ignored'
+ assert requests[2]['at']-requests[1]['at']>=59,'queue-wide backoff did not grow after HTTP 503'
  before=len(requests);stop();start();time.sleep(3);assert len(requests)==before,'completed artist re-fetched after restart';assert completed()
  # Force a daily cycle in the test state while the plugin is disabled.
  version[0]=2;update(config=settings(refresh_token='cycle-two'))
@@ -182,7 +187,7 @@ try:
  wait_for(lambda:call('/api/plugin/release-radar').get('enabled') is False)
  before_revoked=len(requests);time.sleep(3);assert len(requests)==before_revoked,'requests continued after revocation'
  # Navidrome disables the runtime before it can clear old disk snapshots.
- results={'navidrome':'0.64.2','wasm_runtime':True,'storage_and_atomic_rename':True,'real_library_discovery':True,'http_429_backoff':True,'pagination_and_deduplication':True,'metadata_escaping_in_wasm':True,'restart_persistence':True,'changed_release_replaces_snapshot':True,'display_config_refresh':True,'library_revocation_disables_plugin':True,'old_disk_snapshot_requires_manual_removal':True,'library_html_export':True,'export_file_mode':oct(export_mode),'ntfy_baseline_and_update_alerts':True,'ntfy_notifications':len(notifications),'caldav_create_and_date_update':True,'google_token_refresh_create_patch_delete':True,'unrelated_calendar_event_preserved':True,'ics_file_export':True,'fixture_requests':len(requests),'user_library_revocation_clears_cache':True,'automatic_granted_user_selection':True,'ambiguous_grants_stop_processing':True}
+ results={'navidrome':'0.64.2','wasm_runtime':True,'storage_and_atomic_rename':True,'real_library_discovery':True,'http_429_backoff':True,'http_503_global_backoff_and_restart':True,'pagination_and_deduplication':True,'metadata_escaping_in_wasm':True,'restart_persistence':True,'changed_release_replaces_snapshot':True,'display_config_refresh':True,'library_revocation_disables_plugin':True,'old_disk_snapshot_requires_manual_removal':True,'library_html_export':True,'export_file_mode':oct(export_mode),'ntfy_baseline_and_update_alerts':True,'ntfy_notifications':len(notifications),'caldav_create_and_date_update':True,'google_token_refresh_create_patch_delete':True,'unrelated_calendar_event_preserved':True,'ics_file_export':True,'fixture_requests':len(requests),'user_library_revocation_clears_cache':True,'automatic_granted_user_selection':True,'ambiguous_grants_stop_processing':True}
  (ROOT/'dist/integration-results.json').write_text(json.dumps(results,indent=2));print(json.dumps(results,indent=2))
 finally:
  stop();fixture.shutdown()

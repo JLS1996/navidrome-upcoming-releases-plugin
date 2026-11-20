@@ -66,7 +66,8 @@ python3 scripts/test_browser.py
 
 Use installed Chromium, or install Playwright's browser. The suite renders the
 HTML offline and checks list/calendar filters, navigation, uncertain dates and
-calendar download. Direct `file://` navigation may be blocked by managed browser
+calendar download, optional mobile file sharing and its text fallback. Sharing tests
+simulate the browser API; they do not replace a real-device Safari check. Direct `file://` navigation may be blocked by managed browser
 policies; verify local file opening in your deployment.
 
 The configuration editor also has an end-to-end regression test against Navidrome:
