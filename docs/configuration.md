@@ -24,7 +24,51 @@ and unfinished pages resume.
 
 ## General
 
-This tab contains the optional cover-art setting.
+This tab contains the date window, library ownership filter, automatic artist
+matching, direct-credit filtering and optional cover art.
+
+**Days ahead** defaults to 90 (1–730). **Days back** defaults to 30 (0–365).
+Dates use UTC. Changing filters updates cached results without downloading the
+artist catalogs again.
+
+**Exclude releases already in library** is off by default. When enabled, the
+plugin compares report releases with albums in the selected user's granted
+libraries. Artist IDs (or exact artist names when IDs are absent) and album titles
+must match, ignoring capitalization and repeated spaces. Tagged release types are
+checked to distinguish formats and special editions such as live recordings.
+
+Any matching local album record counts, including a partial album; track-by-track
+completeness is not checked. This is not a fuzzy match: renamed or differently titled editions can remain
+visible. Navidrome's Subsonic album API exposes edition IDs rather than the release
+group IDs used by this plugin, so those IDs are not compared directly.
+
+The library album list refreshes every 15 minutes and when you manually refresh.
+It is scanned in resumable pages. Integrations pause during a scan so an incomplete
+inventory cannot produce ownership-based notifications or calendar deletions.
+The setting applies to HTML, `.ics`, notifications, calendar sync and cover fetching.
+Scanning supports up to 100,000 library albums; failures retain the previous snapshot
+and show a retry status. Disabling it restores cached releases immediately.
+
+**Match artists without IDs** is on by default. It uses cautious exact-name
+matching when an artist has no MusicBrainz ID in its tags. IDs in tags and explicit
+overrides are more reliable.
+
+**Exclude artists without directly credited music** is off by default. When enabled,
+it checks the whole album-artist and track-artist names in your selected libraries. For example, an entry called
+“Guest” created from an album credited to “Lead & Guest” is skipped if no album or
+track is credited to “Guest” itself. “Lead” stays included when a track is credited
+to “Lead”. Name comparisons ignore case and repeated spaces; substrings and split
+participants do not count. With multi-artist tags, this intentionally requires a
+standalone credit. Artist ID overrides correct identity but do not bypass this filter.
+
+The scan uses Navidrome locally, without MusicBrainz requests. It supports up to
+100,000 albums, 2,000,000 tracks and 100,000 distinct credits. It runs in pages,
+refreshes every 15 minutes and on manual refresh, and can take time for large
+libraries. Reports retain the previous complete snapshot during rescans;
+notifications and calendar sync pause until scanning finishes. Excluded artists'
+metadata remains cached, so disabling the filter restores their cached results.
+This filter does not discover additional artists outside Navidrome's album-artist
+index. It is separate from **General → Exclude releases already in library**.
 
 ## Matching
 
@@ -32,7 +76,6 @@ Matching is the last tab. It contains tag-ID guidance, override examples and exc
 
 | Setting | Default | Use |
 |---|---|---|
-| Match artists without IDs | On | Match exact artist names when tags have no MusicBrainz artist ID |
 | Artist ID overrides | `{}` | JSON object mapping Navidrome artist IDs to MusicBrainz artist UUIDs |
 | Excluded artist IDs | `[]` | JSON array of Navidrome artist IDs to skip |
 
@@ -70,28 +113,6 @@ leaves the report window or the cache is reset. Artwork belongs to its respectiv
 rights holders; the plugin's MIT license applies to its code, not downloaded covers.
 
 ## Releases
-
-**Days ahead** defaults to 90 (1–730). **Days back** defaults to 30 (0–365).
-Dates use UTC. Changing filters updates cached results without downloading the
-artist catalogs again.
-
-**Exclude releases already in library** is off by default. When enabled, the
-plugin compares report releases with albums in the selected user's granted
-libraries. Artist IDs (or exact artist names when IDs are absent) and album titles
-must match, ignoring capitalization and repeated spaces. Tagged release types are
-checked to distinguish formats and special editions such as live recordings.
-
-Any matching local album record counts, including a partial album; track-by-track
-completeness is not checked. This is not a fuzzy match: renamed or differently titled editions can remain
-visible. Navidrome's Subsonic album API exposes edition IDs rather than the release
-group IDs used by this plugin, so those IDs are not compared directly.
-
-The library album list refreshes every 15 minutes and when you manually refresh.
-It is scanned in resumable pages. Integrations pause during a scan so an incomplete
-inventory cannot produce ownership-based notifications or calendar deletions.
-The setting applies to HTML, `.ics`, notifications, calendar sync and cover fetching.
-Scanning supports up to 100,000 library albums; failures retain the previous snapshot
-and show a retry status. Disabling it restores cached releases immediately.
 
 Select the release formats you want:
 

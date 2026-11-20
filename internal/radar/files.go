@@ -33,6 +33,9 @@ func Load(dir string) (State, error) {
 	if s.OwnedOffset < 0 || s.OwnedOffset > 100000 || s.OwnedAt < 0 || s.OwnedRetryAt < 0 || len(s.OwnedAlbums) > 100000 || len(s.OwnedPending) > 100000 {
 		return s, fmt.Errorf("state.json contains invalid owned-album scan metadata")
 	}
+	if err := s.Direct.Validate(); err != nil {
+		return s, err
+	}
 	for i := range s.Entries {
 		e := &s.Entries[i]
 		// Recover entries written by versions that exhausted artist retries

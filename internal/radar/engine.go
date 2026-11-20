@@ -29,6 +29,9 @@ func (s *State) Step(fetch Fetch, c Config, now time.Time) bool {
 	for n := 0; n < len(s.Entries); n++ {
 		idx := (s.Cursor + n) % len(s.Entries)
 		e := &s.Entries[idx]
+		if !IncludedArtist(e.Artist, c) {
+			continue
+		}
 		if (e.Phase != "match" && e.Phase != "releases") || e.RetryAt > now.Unix() {
 			continue
 		}

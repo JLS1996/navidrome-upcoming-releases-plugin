@@ -211,6 +211,34 @@ try:
  before_owned_toggle=len(requests);update(config=settings(exclude_owned=False))
  wait_for(lambda:'<article class="release"' in (storage/'upcoming-releases.html').read_text())
  assert len(requests)==before_owned_toggle,'owned filter toggle re-fetched metadata'
+ # Whole credit names, not split album participation, determine eligibility.
+ direct_path=base/'direct-library';direct_path.mkdir()
+ for filename,album_artist,track_artist in [('collaboration','Fixture Lead feat. Fixture Guest','Fixture Lead'),('album-only','Fixture Album Only','Fixture Other')]:
+  subprocess.run(['ffmpeg','-hide_banner','-loglevel','error','-f','lavfi','-i','sine=frequency=440:duration=1','-metadata','artist='+track_artist,'-metadata','album_artist='+album_artist,'-metadata','album='+filename,'-metadata','title=Generated credit fixture',str(direct_path/(filename+'.flac'))],check=True)
+ direct_library=call('/api/library','POST',{'name':'Direct credit fixtures','path':str(direct_path)})
+ def rest(endpoint,**extra):
+  from urllib.parse import urlencode
+  p={'u':'fixture-admin','t':auth['subsonicToken'],'s':auth['subsonicSalt'],'v':'1.16.1','c':'radar-test','f':'json'};p.update(extra)
+  return call('/rest/'+endpoint+'?'+urlencode(p))['subsonic-response']
+ rest('startScan')
+ def credit_artists():
+  indexes=rest('getArtists',musicFolderId=direct_library['id'])['artists'].get('index',[])
+  return [a for i in indexes for a in i.get('artist',[])]
+ wait_for(lambda:len(credit_artists())==3)
+ before_direct=len(requests)
+ update(config=settings(exclude_uncredited=True),allLibraries=False,libraries=json.dumps([int(direct_library['id'])]))
+ wait_for(lambda:state().get('directCredits',{}).get('ready') and len(state()['entries'])==3)
+ inventory=state()['directCredits'];assert inventory['albums']==2 and inventory['tracks']==2
+ assert 'Fixture Guest' not in (storage/'upcoming-releases.html').read_text(),'split-only artist remained visible'
+ assert 'Fixture Lead' in (storage/'upcoming-releases.html').read_text(),'direct track artist was excluded'
+ assert 'Fixture Album Only' in (storage/'upcoming-releases.html').read_text(),'direct album artist was excluded'
+ assert len(requests)==before_direct,'credit inventory sent external metadata requests'
+ update(config=settings(exclude_uncredited=False))
+ wait_for(lambda:'Fixture Guest' in (storage/'upcoming-releases.html').read_text())
+ update(config=settings(exclude_uncredited=True))
+ wait_for(lambda:'Fixture Guest' not in (storage/'upcoming-releases.html').read_text())
+ assert len(requests)==before_direct,'filter toggle sent external requests'
+ update(config=settings(exclude_uncredited=False),allLibraries=True)
  # A user can lose a library while the plugin keeps its own library grant.
  (base/'empty-library').mkdir()
  empty=call('/api/library','POST',{'name':'Empty fixture library','path':str(base/'empty-library')})
@@ -230,7 +258,7 @@ try:
  wait_for(lambda:call('/api/plugin/release-radar').get('enabled') is False)
  before_revoked=len(requests);time.sleep(3);assert len(requests)==before_revoked,'requests continued after revocation'
  # Navidrome disables the runtime before it can clear old disk snapshots.
- results={'navidrome':'0.64.2','wasm_runtime':True,'storage_and_atomic_rename':True,'real_library_discovery':True,'http_429_backoff':True,'http_503_global_backoff_and_restart':True,'pagination_and_deduplication':True,'metadata_escaping_in_wasm':True,'restart_persistence':True,'changed_release_replaces_snapshot':True,'display_config_refresh':True,'manual_refresh_both_saved_transitions':True,'idle_upgrade_refresh_preserves_lookup_cache':True,'library_revocation_disables_plugin':True,'old_disk_snapshot_requires_manual_removal':True,'storage_only_reports':True,'storage_file_mode':oct(storage_mode),'legacy_identity_and_contact_ignored':True,'ntfy_baseline_and_update_alerts':True,'ntfy_notifications':len(notifications),'caldav_create_and_date_update':True,'google_token_refresh_create_patch_delete':True,'unrelated_calendar_event_preserved':True,'ics_file_export':True,'exclude_owned_library_album_and_toggle':True,'offline_artwork_redirect_cache_and_toggle':True,'wasm_png_and_jpeg_thumbnails':True,'fixture_requests':len(requests),'user_library_revocation_clears_cache':True,'automatic_granted_user_selection':True,'ambiguous_grants_stop_processing':True}
+ results={'navidrome':'0.64.2','wasm_runtime':True,'storage_and_atomic_rename':True,'real_library_discovery':True,'http_429_backoff':True,'http_503_global_backoff_and_restart':True,'pagination_and_deduplication':True,'metadata_escaping_in_wasm':True,'restart_persistence':True,'changed_release_replaces_snapshot':True,'display_config_refresh':True,'manual_refresh_both_saved_transitions':True,'idle_upgrade_refresh_preserves_lookup_cache':True,'library_revocation_disables_plugin':True,'old_disk_snapshot_requires_manual_removal':True,'storage_only_reports':True,'storage_file_mode':oct(storage_mode),'legacy_identity_and_contact_ignored':True,'ntfy_baseline_and_update_alerts':True,'ntfy_notifications':len(notifications),'caldav_create_and_date_update':True,'google_token_refresh_create_patch_delete':True,'unrelated_calendar_event_preserved':True,'ics_file_export':True,'exclude_owned_library_album_and_toggle':True,'direct_album_and_track_credit_filter_and_toggle':True,'offline_artwork_redirect_cache_and_toggle':True,'wasm_png_and_jpeg_thumbnails':True,'fixture_requests':len(requests),'user_library_revocation_clears_cache':True,'automatic_granted_user_selection':True,'ambiguous_grants_stop_processing':True}
  (ROOT/'dist/integration-results.json').write_text(json.dumps(results,indent=2));print(json.dumps(results,indent=2))
 finally:
  stop();fixture.shutdown()

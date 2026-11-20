@@ -54,7 +54,7 @@ NAVIDROME_BIN=/path/to/navidrome python3 scripts/test_integration.py
 
 The harness runs real Navidrome and the WASM plugin against local fixture services.
 It synthesizes audio, creates disposable users, and checks ntfy, CalDAV, Google
-Calendar, restart recovery and library revocation. It never uses real remote
+Calendar, direct album/track credit filtering, restart recovery and library revocation. It never uses real remote
 accounts. Fixture overrides are build-tagged and excluded from normal packages.
 Runtime data remains under ignored `test-runtime/`.
 

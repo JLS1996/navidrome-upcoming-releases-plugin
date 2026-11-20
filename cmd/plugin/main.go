@@ -47,6 +47,7 @@ func str(key, def string) string {
 func config() (radar.Config, error) {
 	c := radar.DefaultConfig()
 	c.CoverArt = str("cover_art", "false") == "true"
+	c.ExcludeUncredited = str("exclude_uncredited", "false") == "true"
 	c.ExcludeOwned = str("exclude_owned", "false") == "true"
 	c.CalendarNamespace = str("calendar_namespace", "release-radar")
 	var err error
@@ -165,7 +166,11 @@ func (p *plugin) tick() error {
 		s = radar.State{Schema: 1}
 		return finish(fmt.Errorf("assign at least one library shared by the selected user and plugin"))
 	}
+	c.DirectReady, c.DirectCredits = s.Direct.Ready, s.Direct.Credits
 	refreshChanged := s.ApplyRefresh(str("manual_refresh", "false") == "true")
+	if refreshChanged {
+		s.Direct.At = 0
+	}
 	if c.ExcludeOwned {
 		c.OwnershipReady = s.OwnedReady
 		c.OwnedAlbums = s.OwnedAlbums
@@ -195,6 +200,44 @@ func (p *plugin) tick() error {
 			return finish(fmt.Errorf("Owned-album scan is waiting to retry; integrations are paused"))
 		}
 	}
+	if c.ExcludeUncredited {
+		c.DirectReady, c.DirectCredits = s.Direct.Ready, s.Direct.Credits
+		if s.Direct.ScanDue(now, refreshChanged) && now.Unix() >= s.Direct.RetryAt {
+			q := url.Values{"u": {c.Username}}
+			for _, id := range ids {
+				q.Add("musicFolderId", strconv.Itoa(id))
+			}
+			endpoint := "getAlbumList2"
+			if s.Direct.Phase == "albums" {
+				q.Set("type", "alphabeticalByName")
+				q.Set("size", "500")
+				q.Set("offset", strconv.Itoa(s.Direct.Offset))
+			} else {
+				endpoint = "search3"
+				q.Set("query", "")
+				q.Set("artistCount", "0")
+				q.Set("albumCount", "0")
+				q.Set("songCount", "500")
+				q.Set("songOffset", strconv.Itoa(s.Direct.Offset))
+			}
+			raw, scanErr := host.Subsonic(endpoint + "?" + q.Encode())
+			complete := false
+			if scanErr == nil {
+				complete, scanErr = s.Direct.Page(raw, now)
+			}
+			if scanErr != nil {
+				s.Direct.Restart(now)
+				return finish(fmt.Errorf("direct-credit scan failed: %v; retrying in one minute", scanErr))
+			}
+			if !complete {
+				return finish(fmt.Errorf("Checking directly credited music: %d albums and %d tracks scanned; integrations are paused", s.Direct.Albums, s.Direct.Tracks))
+			}
+			c.DirectReady, c.DirectCredits = true, s.Direct.Credits
+		}
+		if s.Direct.Phase != "" {
+			return finish(fmt.Errorf("Direct-credit scan is waiting to retry; integrations are paused"))
+		}
+	}
 	if (s.RefreshPending || now.Unix()-s.DiscoveredAt >= 86400) && now.Unix() >= s.NextDiscovery {
 		artists, err := discover(c.Username, ids)
 		if err != nil {
@@ -207,7 +250,7 @@ func (p *plugin) tick() error {
 	if s.NextDiscovery == 0 {
 		s.Problem = ""
 	}
-	view := radar.Version + "/" + fmt.Sprintf("%d/%d/%v/%v/%t", c.AheadDays, c.PastDays, c.PrimaryTypes, c.SecondaryTypes, c.IncludeStandard) + fmt.Sprint(c.CoverArt, c.ExcludeOwned, s.OwnedAt) + ic.Fingerprint()
+	view := radar.Version + "/" + fmt.Sprintf("%d/%d/%v/%v/%t", c.AheadDays, c.PastDays, c.PrimaryTypes, c.SecondaryTypes, c.IncludeStandard) + fmt.Sprint(c.CoverArt, c.ExcludeOwned, s.OwnedAt, c.ExcludeUncredited, s.Direct.At) + ic.Fingerprint()
 	viewChanged := s.ViewConfig != view
 	s.ViewConfig = view
 	d, loadErr := radar.LoadDeliveries(dir)

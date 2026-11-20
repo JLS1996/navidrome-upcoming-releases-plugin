@@ -90,8 +90,14 @@ func ownedICS(body []byte, uid string) bool {
 	s := strings.ReplaceAll(strings.ReplaceAll(string(body), "\r\n ", ""), "\r\n\t", "")
 	return strings.Contains(s, "PRODID:-//Release Radar//") && strings.Contains(s, "\r\nUID:"+uid+"\r\n")
 }
-func FullCycle(s State) bool {
+func FullCycle(s State, c Config) bool {
+	if c.ExcludeUncredited && !c.DirectReady {
+		return false
+	}
 	for _, e := range s.Entries {
+		if !IncludedArtist(e.Artist, c) {
+			continue
+		}
 		if e.Phase == "match" || e.Phase == "releases" {
 			return false
 		}

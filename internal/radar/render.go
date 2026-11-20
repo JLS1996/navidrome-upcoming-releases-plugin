@@ -25,9 +25,13 @@ type report struct {
 }
 
 func Render(s State, c Config, now time.Time) ([]byte, error) {
-	p := report{Generated: now.UTC().Format("2 Jan 2006, 15:04 UTC"), Artists: len(s.Entries), Problem: s.Problem, AheadDays: c.AheadDays, PastDays: c.PastDays}
+	p := report{Generated: now.UTC().Format("2 Jan 2006, 15:04 UTC"), Artists: 0, Problem: s.Problem, AheadDays: c.AheadDays, PastDays: c.PastDays}
 	today := now.UTC().Format("2006-01-02")
 	for _, e := range s.Entries {
+		if !IncludedArtist(e.Artist, c) {
+			continue
+		}
+		p.Artists++
 		if e.Phase == "done" {
 			p.Complete++
 		} else if e.Phase == "match" || e.Phase == "releases" {

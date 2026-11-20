@@ -167,7 +167,7 @@ func (d *DeliveryState) ntfyStep(s State, c Config, ic IntegrationConfig, send S
 	}
 	events := Events(s, c, ic.Namespace, now, false)
 	if !d.NtfyReady {
-		if !FullCycle(s) {
+		if !FullCycle(s, c) {
 			return false
 		}
 		d.NtfyReady = true
@@ -260,7 +260,7 @@ func (d *DeliveryState) calendarStep(s State, c Config, ic IntegrationConfig, se
 		keys = append(keys, k)
 	}
 	for k := range d.Remote {
-		if _, ok := desired[k]; !ok && FullCycle(s) {
+		if _, ok := desired[k]; !ok && FullCycle(s, c) {
 			keys = append(keys, k)
 		}
 	}

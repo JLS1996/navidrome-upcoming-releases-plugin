@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/JLS1996/navidrome-upcoming-releases-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/JLS1996/navidrome-upcoming-releases-plugin/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-0.6.0-green)
+![Version](https://img.shields.io/badge/version-0.7.0-green)
 ![Navidrome](https://img.shields.io/badge/tested%20with-Navidrome%200.64.2-orange)
 
 Keep up with new music from the artists already in your Navidrome library.
@@ -18,7 +18,7 @@ Keep up with new music from the artists already in your Navidrome library.
 ## What it does
 
 - Finds upcoming and recent releases using the free MusicBrainz API.
-- Lets you choose release types and optionally hide music already in your library.
+- Lets you choose release types, hide owned releases and skip artists without standalone library credits.
 - Generates an offline HTML dashboard with search, filters and a calendar that fits mobile screens.
 - Optionally embeds cover art for offline viewing, with a subtle card background.
 - Exports `.ics` files and optionally sends notifications or syncs a calendar.

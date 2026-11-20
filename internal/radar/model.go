@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const Version = "0.6.0"
+const Version = "0.7.0"
 
 func MusicBrainzUserAgent() string {
 	return "NavidromeReleaseRadar/" + Version + " (https://github.com/JLS1996/navidrome-upcoming-releases-plugin)"
@@ -44,32 +44,36 @@ type Entry struct {
 	Failures     int       `json:"failures,omitempty"`
 }
 type State struct {
-	OwnedAlbums         []LibraryAlbum `json:"ownedAlbums,omitempty"`
-	OwnedPending        []LibraryAlbum `json:"ownedPending,omitempty"`
-	OwnedOffset         int            `json:"ownedOffset,omitempty"`
-	OwnedAt             int64          `json:"ownedAt,omitempty"`
-	OwnedRetryAt        int64          `json:"ownedRetryAt,omitempty"`
-	OwnedReady          bool           `json:"ownedReady,omitempty"`
-	OwnedScanning       bool           `json:"ownedScanning,omitempty"`
-	PreferArtwork       bool           `json:"preferArtwork,omitempty"`
-	ArtworkProblem      string         `json:"artworkProblem,omitempty"`
-	MusicBrainzFailures int            `json:"musicBrainzFailures,omitempty"`
-	MusicBrainzProblem  string         `json:"musicBrainzProblem,omitempty"`
-	IntegrationProblem  string         `json:"integrationProblem,omitempty"`
-	RefreshToggle       *bool          `json:"refreshToggle,omitempty"`
-	RefreshPending      bool           `json:"refreshPending,omitempty"`
-	NextDiscovery       int64          `json:"nextDiscovery,omitempty"`
-	RenderedAt          int64          `json:"renderedAt"`
-	ViewConfig          string         `json:"viewConfig"`
-	Schema              int            `json:"schema"`
-	DiscoveredAt        int64          `json:"discoveredAt"`
-	Scope               string         `json:"scope"`
-	Entries             []Entry        `json:"entries"`
-	Cursor              int            `json:"cursor"`
-	NextHTTP            int64          `json:"nextHttp"`
-	Problem             string         `json:"problem,omitempty"`
+	Direct              CreditInventory `json:"directCredits,omitempty"`
+	OwnedAlbums         []LibraryAlbum  `json:"ownedAlbums,omitempty"`
+	OwnedPending        []LibraryAlbum  `json:"ownedPending,omitempty"`
+	OwnedOffset         int             `json:"ownedOffset,omitempty"`
+	OwnedAt             int64           `json:"ownedAt,omitempty"`
+	OwnedRetryAt        int64           `json:"ownedRetryAt,omitempty"`
+	OwnedReady          bool            `json:"ownedReady,omitempty"`
+	OwnedScanning       bool            `json:"ownedScanning,omitempty"`
+	PreferArtwork       bool            `json:"preferArtwork,omitempty"`
+	ArtworkProblem      string          `json:"artworkProblem,omitempty"`
+	MusicBrainzFailures int             `json:"musicBrainzFailures,omitempty"`
+	MusicBrainzProblem  string          `json:"musicBrainzProblem,omitempty"`
+	IntegrationProblem  string          `json:"integrationProblem,omitempty"`
+	RefreshToggle       *bool           `json:"refreshToggle,omitempty"`
+	RefreshPending      bool            `json:"refreshPending,omitempty"`
+	NextDiscovery       int64           `json:"nextDiscovery,omitempty"`
+	RenderedAt          int64           `json:"renderedAt"`
+	ViewConfig          string          `json:"viewConfig"`
+	Schema              int             `json:"schema"`
+	DiscoveredAt        int64           `json:"discoveredAt"`
+	Scope               string          `json:"scope"`
+	Entries             []Entry         `json:"entries"`
+	Cursor              int             `json:"cursor"`
+	NextHTTP            int64           `json:"nextHttp"`
+	Problem             string          `json:"problem,omitempty"`
 }
 type Config struct {
+	ExcludeUncredited bool
+	DirectReady       bool
+	DirectCredits     map[string]bool
 	ExcludeOwned      bool
 	OwnershipReady    bool
 	OwnedAlbums       []LibraryAlbum
@@ -296,7 +300,7 @@ type reportRelease struct {
 // Shared release groups appear once, with stable combined artist credits in
 // HTML, calendar exports and notifications. Prefer the newest committed metadata.
 func visibleReleases(s State, c Config, now time.Time) []reportRelease {
-	if c.ExcludeOwned && !c.OwnershipReady {
+	if (c.ExcludeOwned && !c.OwnershipReady) || (c.ExcludeUncredited && !c.DirectReady) {
 		return nil
 	}
 	ownedByTitle := map[string][]LibraryAlbum{}
@@ -310,6 +314,9 @@ func visibleReleases(s State, c Config, now time.Time) []reportRelease {
 	groups := map[string]reportRelease{}
 	credits := map[string]map[string]bool{}
 	for _, e := range s.Entries {
+		if !IncludedArtist(e.Artist, c) {
+			continue
+		}
 		for _, r := range e.Releases {
 			if !r.ValidID() {
 				continue

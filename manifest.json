@@ -1,7 +1,7 @@
 {
   "name": "Release Radar",
   "author": "Release Radar contributors",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Upcoming music releases with an offline list/calendar dashboard, .ics export, optional ntfy alerts and CalDAV or Google Calendar sync.",
   "permissions": {
     "storage": {
@@ -257,6 +257,12 @@
           "title": "Exclude releases already in library",
           "default": false,
           "description": "Hide exact artist/title matches in the selected libraries. Release types are checked when tagged. Applies to the report, notifications and calendars. Ownership refreshes every 15 minutes and on manual refresh."
+        },
+        "exclude_uncredited": {
+          "type": "boolean",
+          "title": "Exclude artists without directly credited music",
+          "default": false,
+          "description": "Skip artists with no album or track credited to their own name in the selected libraries."
         }
       }
     },
@@ -322,24 +328,22 @@
               "elements": [
                 {
                   "type": "Group",
-                  "label": "Appearance",
+                  "label": "Date window",
                   "elements": [
                     {
                       "type": "Control",
-                      "scope": "#/properties/cover_art"
+                      "scope": "#/properties/ahead_days"
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/past_days"
                     }
                   ]
                 },
                 {
                   "type": "Label",
                   "text": "\u00a0"
-                }
-              ]
-            },
-            {
-              "type": "Category",
-              "label": "Releases",
-              "elements": [
+                },
                 {
                   "type": "Group",
                   "label": "Library ownership",
@@ -364,15 +368,27 @@
                 },
                 {
                   "type": "Group",
-                  "label": "Date window",
+                  "label": "Direct library credits",
                   "elements": [
                     {
-                      "type": "Control",
-                      "scope": "#/properties/ahead_days"
+                      "type": "Label",
+                      "text": "Keep artists with at least one album or track credited to their own name. A split collaboration credit alone does not count."
+                    },
+                    {
+                      "type": "Label",
+                      "text": "\u00a0"
+                    },
+                    {
+                      "type": "Label",
+                      "text": "Checks only the selected libraries. The first scan may take a while; it repeats every 15 minutes and on manual refresh. Artist ID overrides do not bypass this filter."
+                    },
+                    {
+                      "type": "Label",
+                      "text": "\u00a0"
                     },
                     {
                       "type": "Control",
-                      "scope": "#/properties/past_days"
+                      "scope": "#/properties/exclude_uncredited"
                     }
                   ]
                 },
@@ -380,6 +396,48 @@
                   "type": "Label",
                   "text": "\u00a0"
                 },
+                {
+                  "type": "Group",
+                  "label": "Automatic matching",
+                  "elements": [
+                    {
+                      "type": "Label",
+                      "text": "MusicBrainz artist IDs in your music tags are the most reliable match. Automatic matching is a cautious fallback when tags have no ID."
+                    },
+                    {
+                      "type": "Label",
+                      "text": "\u00a0"
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/auto_match"
+                    }
+                  ]
+                },
+                {
+                  "type": "Label",
+                  "text": "\u00a0"
+                },
+                {
+                  "type": "Group",
+                  "label": "Appearance",
+                  "elements": [
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/cover_art"
+                    }
+                  ]
+                },
+                {
+                  "type": "Label",
+                  "text": "\u00a0"
+                }
+              ]
+            },
+            {
+              "type": "Category",
+              "label": "Releases",
+              "elements": [
                 {
                   "type": "Group",
                   "label": "Release formats",
@@ -682,28 +740,6 @@
               "type": "Category",
               "label": "Matching",
               "elements": [
-                {
-                  "type": "Group",
-                  "label": "Automatic matching",
-                  "elements": [
-                    {
-                      "type": "Label",
-                      "text": "MusicBrainz artist IDs in your music tags are the most reliable match. Automatic matching is a cautious fallback when tags have no ID."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/auto_match"
-                    }
-                  ]
-                },
-                {
-                  "type": "Label",
-                  "text": "\u00a0"
-                },
                 {
                   "type": "Group",
                   "label": "Fix an artist match",

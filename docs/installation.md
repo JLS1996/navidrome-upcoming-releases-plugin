@@ -15,7 +15,8 @@
 The first report appears as checks start. Large libraries take longer to finish;
 lookups run gradually and resume after restarts. Artist discovery refreshes daily.
 To request a new cycle, flip **Refresh releases** below Info in either direction
-and press **Save**. Matching and exclusions are in the final **Matching** tab.
+and press **Save**. Automatic matching and both library filters are in **General**. Artist ID
+overrides and manual exclusions are in the final **Matching** tab.
 
 ## Opening the report
 
