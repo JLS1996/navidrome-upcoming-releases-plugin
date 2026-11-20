@@ -26,7 +26,7 @@ and unfinished pages resume.
 
 The sections appear in this order: **Date window**, **Appearance**,
 **Automatic matching**, then **Exclusions**. Both library filters are under
-**Exclusions** and are off by default.
+**Exclusions** and are off by default. Each switch appears above its explanation.
 
 **Days ahead** defaults to 90 (1–730). **Days back** defaults to 30 (0–365).
 Dates use UTC. Changing filters updates cached results without downloading the

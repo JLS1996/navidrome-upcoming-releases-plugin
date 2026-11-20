@@ -178,6 +178,8 @@ try:
     page.keyboard.press('Escape')
     drawer.wait_for(state='hidden')
    for name in categories:category(name);assert_spacing()
+   category('General')
+   page.get_by_text('Exclusions',exact=True).locator('xpath=ancestor::div[contains(@class,"MuiCard-root")][1]').screenshot(path=str(base/('exclusions-'+str(width)+'.png')),animations='disabled')
    category('Integrations');provider('google');assert_spacing()
    page.screenshot(path=str(base/('settings-'+str(width)+'.png')),full_page=True,animations='disabled')
    category('Integrations');provider('caldav')

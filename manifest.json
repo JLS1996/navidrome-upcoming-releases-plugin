@@ -1,7 +1,7 @@
 {
   "name": "navidrome-upcoming-releases-plugin",
   "author": "navidrome-upcoming-releases-plugin contributors",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Upcoming music releases with an offline list/calendar dashboard, .ics export, optional ntfy alerts and CalDAV or Google Calendar sync.",
   "permissions": {
     "storage": {
@@ -310,7 +310,7 @@
           "elements": [
             {
               "type": "Label",
-              "text": "Finds upcoming and recent releases from your library."
+              "text": "Find upcoming and recent releases from your library. Checks refresh daily and resume after restarts."
             },
             {
               "type": "Label",
@@ -318,7 +318,7 @@
             },
             {
               "type": "Label",
-              "text": "Checks refresh daily and resume after restarts."
+              "text": "Open upcoming-releases.html from plugin storage in a browser. Refresh or copy a new version to see updates; MusicBrainz links need internet."
             },
             {
               "type": "Label",
@@ -326,47 +326,7 @@
             },
             {
               "type": "Label",
-              "text": "Open upcoming-releases.html from this plugin\u2019s storage folder in a browser."
-            },
-            {
-              "type": "Label",
-              "text": "\u00a0"
-            },
-            {
-              "type": "Label",
-              "text": "Refresh or copy a new version to see updates."
-            },
-            {
-              "type": "Label",
-              "text": "\u00a0"
-            },
-            {
-              "type": "Label",
-              "text": "Artist and release links open MusicBrainz."
-            },
-            {
-              "type": "Label",
-              "text": "\u00a0"
-            },
-            {
-              "type": "Label",
-              "text": "Optional covers are in General; alerts and calendar setup are in Integrations."
-            },
-            {
-              "type": "Label",
-              "text": "\u00a0"
-            },
-            {
-              "type": "Label",
-              "text": "Keep working JSON files private."
-            },
-            {
-              "type": "Label",
-              "text": "\u00a0"
-            },
-            {
-              "type": "Label",
-              "text": "Flip the switch below in either direction, then Save, to request a fresh check."
+              "text": "General controls appearance and library filters; Integrations contains alerts and calendars. Keep working JSON files private."
             },
             {
               "type": "Label",
@@ -378,10 +338,6 @@
               "options": {
                 "toggle": true
               }
-            },
-            {
-              "type": "Label",
-              "text": "\u00a0"
             }
           ]
         },
@@ -417,15 +373,7 @@
                   "elements": [
                     {
                       "type": "Label",
-                      "text": "Choose Bright, Dark or Black for the HTML report."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "This changes colors only; your library, release filters and calendar stay the same."
+                      "text": "Choose Bright, Dark or Black for the HTML report. This changes colors only; your release filters and calendar stay the same."
                     },
                     {
                       "type": "Label",
@@ -434,10 +382,6 @@
                     {
                       "type": "Control",
                       "scope": "#/properties/dashboard_theme"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
                     },
                     {
                       "type": "Control",
@@ -455,15 +399,7 @@
                   "elements": [
                     {
                       "type": "Label",
-                      "text": "MusicBrainz artist IDs in your music tags are the most reliable match."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "Automatic matching is a cautious fallback when tags have no ID."
+                      "text": "MusicBrainz IDs in your music tags are the most reliable match. Automatic matching is a cautious fallback when tags have no ID."
                     },
                     {
                       "type": "Label",
@@ -489,11 +425,7 @@
                     },
                     {
                       "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "Matching uses exact artist and album-title credits, ignoring case and repeated spaces."
+                      "text": "Matches artist and album-title credits exactly, ignoring case and repeated spaces. Release types are checked when tagged; a partial local album still counts as owned."
                     },
                     {
                       "type": "Label",
@@ -501,79 +433,7 @@
                     },
                     {
                       "type": "Label",
-                      "text": "Release types are checked when tagged. A partial local album still counts as owned."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "This filter applies to the report, notifications and calendars."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "The local album inventory refreshes every 15 minutes and on manual refresh."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "Alternate editions with different titles may remain visible."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "This uses exact matching, not fuzzy title guesses."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "Keep artists with at least one album or track credited to their own name."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "A split collaboration credit alone does not count."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "Checks only the selected libraries."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "The first scan may take a while; it repeats every 15 minutes and on manual refresh."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "Artist ID overrides do not bypass this filter."
+                      "text": "Applies to reports, notifications and calendars. The local inventory refreshes every 15 minutes and on manual refresh. Differently titled editions may remain visible."
                     },
                     {
                       "type": "Label",
@@ -582,6 +442,18 @@
                     {
                       "type": "Control",
                       "scope": "#/properties/exclude_uncredited"
+                    },
+                    {
+                      "type": "Label",
+                      "text": "Keeps artists with at least one album or track credited to their own name. A split collaboration credit alone does not count."
+                    },
+                    {
+                      "type": "Label",
+                      "text": "\u00a0"
+                    },
+                    {
+                      "type": "Label",
+                      "text": "Checks only the selected libraries, every 15 minutes and on manual refresh. The first scan may take a while. Artist ID overrides do not bypass this filter."
                     }
                   ]
                 },
@@ -631,15 +503,7 @@
                   "elements": [
                     {
                       "type": "Label",
-                      "text": "Choose release formats above."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "For releases with secondary tags, any selected tag below is enough to include the release."
+                      "text": "Choose release formats above. For releases with secondary tags, any selected tag below is enough to include the release."
                     },
                     {
                       "type": "Label",
@@ -725,31 +589,7 @@
                   "elements": [
                     {
                       "type": "Label",
-                      "text": "Alerts are optional."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "Enable ntfy, enter a server and topic, and subscribe to that topic in your ntfy app."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "Switching alerts off keeps your settings."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "Only releases allowed by General and Releases settings can notify you."
+                      "text": "Enable ntfy, enter a server and topic, and subscribe to that topic in your ntfy app. Switching alerts off keeps your settings; all alerts follow your General and Releases filters."
                     },
                     {
                       "type": "Label",
@@ -764,19 +604,7 @@
                     },
                     {
                       "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "Use an unguessable topic or a server with restricted read access."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "Anyone who can read a public topic can see its alerts."
+                      "text": "Use an unguessable topic or a server with restricted read access. Anyone who can read a public topic can see its alerts."
                     },
                     {
                       "type": "Label",
@@ -799,19 +627,7 @@
                     },
                     {
                       "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "Choose what to receive."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "Release-day reminders use UTC and need a confirmed full date; no catch-up reminder is sent for a day the plugin missed."
+                      "text": "Choose what to receive. Release-day reminders use UTC and require a full date; missed days are not replayed."
                     },
                     {
                       "type": "Label",
@@ -831,19 +647,7 @@
                     },
                     {
                       "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "The first scan is silent unless you include existing releases below."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "Re-enabling a disabled notification category does not replay changes already skipped."
+                      "text": "The first scan is silent unless you include existing releases below. Re-enabling a notification category does not replay changes already skipped."
                     },
                     {
                       "type": "Label",
@@ -865,7 +669,7 @@
                   "elements": [
                     {
                       "type": "Label",
-                      "text": "Local calendar: use Save or share calendar in the HTML, or import music-releases.ics."
+                      "text": "Local calendar: use Save or share calendar in the HTML, or import music-releases.ics. Imports are snapshots; select CalDAV or Google for automatic updates to a dedicated calendar."
                     },
                     {
                       "type": "Label",
@@ -873,39 +677,7 @@
                     },
                     {
                       "type": "Label",
-                      "text": "An import is a snapshot."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "Select CalDAV or Google for automatic updates to a dedicated calendar."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "Select none to stop remote sync."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "Existing remote events stay in place; the local calendar file still works."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "Keep the same instance name and granted user when upgrading to preserve event identities."
+                      "text": "Select none to stop remote sync; existing remote events stay in place and local export still works. Keep the same instance name and granted user when upgrading to preserve event identities."
                     },
                     {
                       "type": "Label",
@@ -931,23 +703,7 @@
                   "elements": [
                     {
                       "type": "Label",
-                      "text": "Create a dedicated releases calendar."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "Enter its full HTTPS collection URL and your provider\u2019s app credentials."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "A generic account/discovery URL will not work; redirects are not followed."
+                      "text": "Create a dedicated releases calendar. Enter its full HTTPS collection URL and your provider\u2019s app credentials. An account/discovery URL will not work; redirects are not followed."
                     },
                     {
                       "type": "Label",
@@ -998,7 +754,7 @@
                   "elements": [
                     {
                       "type": "Label",
-                      "text": "Create a dedicated Google calendar and copy its Calendar ID from Google Calendar settings."
+                      "text": "Create a dedicated Google calendar and copy its Calendar ID. In Google Cloud, enable Calendar API and create an OAuth Desktop client."
                     },
                     {
                       "type": "Label",
@@ -1006,23 +762,7 @@
                     },
                     {
                       "type": "Label",
-                      "text": "In Google Cloud, enable Calendar API and create an OAuth Desktop client."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "On your computer, run scripts/google_authorize.py with --client-json client.json --output google-oauth.json."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "Authorize the calendar account, then copy the saved client ID, secret and refresh token below."
+                      "text": "Run scripts/google_authorize.py with --client-json client.json --output google-oauth.json on your computer. Authorize the calendar account, then copy the saved credentials below."
                     },
                     {
                       "type": "Label",
@@ -1094,7 +834,7 @@
                   "elements": [
                     {
                       "type": "Label",
-                      "text": "Open the report\u2019s attention section and copy the Navidrome artist ID shown there."
+                      "text": "Copy the Navidrome artist ID from the report\u2019s attention section. Find the correct MusicBrainz artist and copy the UUID at the end of its artist-page URL, not a release ID."
                     },
                     {
                       "type": "Label",
@@ -1102,31 +842,7 @@
                     },
                     {
                       "type": "Label",
-                      "text": "Find the correct artist on MusicBrainz."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "Copy the UUID at the end of its artist-page URL, not a release or release-group ID."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "Enter a JSON mapping from Navidrome ID to MusicBrainz artist UUID."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "Example:"
+                      "text": "Enter a JSON mapping from Navidrome ID to MusicBrainz artist UUID. Example:"
                     },
                     {
                       "type": "Label",
@@ -1159,15 +875,7 @@
                   "elements": [
                     {
                       "type": "Label",
-                      "text": "Enter Navidrome IDs as a JSON array, for example [\"artist-id-from-report\"]."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "Save changes to apply matching and exclusion settings."
+                      "text": "Enter Navidrome IDs as a JSON array, for example [\"artist-id-from-report\"]. Save changes to apply matching and exclusion settings."
                     },
                     {
                       "type": "Label",
@@ -1196,7 +904,7 @@
           "elements": [
             {
               "type": "Label",
-              "text": "Grant exactly one Navidrome user in Users Permission below."
+              "text": "Grant exactly one user in Users Permission and select the intended libraries in Library Permission. Turn off Allow all users when more than one account exists. Library write access is not needed."
             },
             {
               "type": "Label",
@@ -1204,43 +912,7 @@
             },
             {
               "type": "Label",
-              "text": "Select the intended libraries in Library Permission."
-            },
-            {
-              "type": "Label",
-              "text": "\u00a0"
-            },
-            {
-              "type": "Label",
-              "text": "Turn off Allow all users when more than one account exists."
-            },
-            {
-              "type": "Label",
-              "text": "\u00a0"
-            },
-            {
-              "type": "Label",
-              "text": "Library write access is not needed."
-            },
-            {
-              "type": "Label",
-              "text": "\u00a0"
-            },
-            {
-              "type": "Label",
-              "text": "MusicBrainz lookups require no personal account or email."
-            },
-            {
-              "type": "Label",
-              "text": "\u00a0"
-            },
-            {
-              "type": "Label",
-              "text": "They use the plugin\u2019s project identification."
-            },
-            {
-              "type": "Label",
-              "text": "\u00a0"
+              "text": "MusicBrainz lookups need no personal account or email; requests use the plugin\u2019s project identification."
             }
           ]
         }

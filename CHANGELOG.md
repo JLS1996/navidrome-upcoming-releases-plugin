@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.1
+
+- Place the direct-credit exclusion switch above its explanation.
+- Combine related help sentences into fewer paragraphs throughout the settings.
+- Retain clear separation between controls, topics and setup steps.
+
 ## 0.8.0
 
 - Rename the displayed plugin and standard package to navidrome-upcoming-releases-plugin.
