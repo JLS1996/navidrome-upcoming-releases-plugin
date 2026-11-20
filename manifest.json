@@ -1,7 +1,7 @@
 {
   "name": "Release Radar",
   "author": "Release Radar contributors",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Upcoming music releases with an offline list/calendar dashboard, .ics export, optional ntfy alerts and CalDAV or Google Calendar sync.",
   "permissions": {
     "storage": {
@@ -246,312 +246,319 @@
       }
     },
     "uiSchema": {
-      "type": "Categorization",
-      "label": "Plugin settings",
+      "type": "VerticalLayout",
       "elements": [
         {
-          "type": "Category",
-          "label": "General",
+          "type": "Group",
+          "label": "Generated files",
           "elements": [
             {
-              "type": "Group",
-              "label": "Library access",
+              "type": "Label",
+              "text": "Reports are saved in Navidrome\u2019s data folder: plugins/release-radar/storage/"
+            },
+            {
+              "type": "Label",
+              "text": "Open upcoming-releases.html locally for the release list and calendar. Import music-releases.ics for dated events. Copy the HTML again to see updates on another device."
+            },
+            {
+              "type": "Label",
+              "text": "Optional integrations send release information to ntfy and your configured CalDAV or Google Calendar. Local report files stay in plugin storage; no incoming web download endpoint is added."
+            },
+            {
+              "type": "Label",
+              "text": "Keep state.json and integrations.json private. They contain library metadata and integration state."
+            }
+          ]
+        },
+        {
+          "type": "Categorization",
+          "label": "Plugin settings",
+          "elements": [
+            {
+              "type": "Category",
+              "label": "General",
               "elements": [
                 {
-                  "type": "Label",
-                  "text": "Grant exactly one user and the intended libraries in the permission cards below. MusicBrainz lookups need no account or personal email."
+                  "type": "Group",
+                  "label": "Artist matching",
+                  "elements": [
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/auto_match"
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/artist_overrides",
+                      "options": {
+                        "multi": true
+                      }
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/excluded_artists",
+                      "options": {
+                        "multi": true
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "Group",
+                  "label": "Manual refresh",
+                  "elements": [
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/refresh_token"
+                    }
+                  ]
                 }
               ]
             },
             {
-              "type": "Group",
-              "label": "Artist matching",
+              "type": "Category",
+              "label": "Releases",
               "elements": [
                 {
-                  "type": "Control",
-                  "scope": "#/properties/auto_match"
+                  "type": "Group",
+                  "label": "Date window",
+                  "elements": [
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/ahead_days"
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/past_days"
+                    }
+                  ]
                 },
                 {
-                  "type": "Control",
-                  "scope": "#/properties/artist_overrides",
-                  "options": {
-                    "multi": true
-                  }
+                  "type": "Group",
+                  "label": "Release formats",
+                  "elements": [
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/include_albums"
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/include_eps"
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/include_singles"
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/include_broadcasts"
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/include_other"
+                    }
+                  ]
                 },
                 {
-                  "type": "Control",
-                  "scope": "#/properties/excluded_artists",
-                  "options": {
-                    "multi": true
-                  }
+                  "type": "Group",
+                  "label": "Standard and special releases",
+                  "elements": [
+                    {
+                      "type": "Label",
+                      "text": "Choose release formats above. For releases with secondary tags, any selected tag below is enough to include the release."
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/include_standard"
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/include_live"
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/include_compilations"
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/include_remixes"
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/include_soundtracks"
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/include_demos"
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/include_mixtapes"
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/include_dj_mixes"
+                    }
+                  ]
+                },
+                {
+                  "type": "Group",
+                  "label": "Spoken and other recordings",
+                  "elements": [
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/include_spokenword"
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/include_interviews"
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/include_audiobooks"
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/include_audio_drama"
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/include_field_recordings"
+                    }
+                  ]
                 }
               ]
             },
             {
-              "type": "Group",
-              "label": "Manual refresh",
+              "type": "Category",
+              "label": "Notifications",
               "elements": [
                 {
-                  "type": "Control",
-                  "scope": "#/properties/refresh_token"
+                  "type": "Group",
+                  "label": "ntfy alerts",
+                  "elements": [
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/ntfy_server"
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/ntfy_topic"
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/ntfy_access_token",
+                      "options": {
+                        "format": "password"
+                      }
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/ntfy_notify_initial"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "Category",
+              "label": "Calendar",
+              "elements": [
+                {
+                  "type": "Group",
+                  "label": "Calendar destination",
+                  "elements": [
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/calendar_provider"
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/calendar_namespace"
+                    }
+                  ]
+                },
+                {
+                  "type": "Group",
+                  "label": "CalDAV credentials",
+                  "elements": [
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/caldav_calendar_url"
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/caldav_username"
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/caldav_app_password",
+                      "options": {
+                        "format": "password"
+                      }
+                    }
+                  ],
+                  "rule": {
+                    "effect": "SHOW",
+                    "condition": {
+                      "scope": "#/properties/calendar_provider",
+                      "schema": {
+                        "const": "caldav"
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "Group",
+                  "label": "Google Calendar credentials",
+                  "elements": [
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/google_calendar_id"
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/google_client_id"
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/google_client_secret",
+                      "options": {
+                        "format": "password"
+                      }
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/google_refresh_token",
+                      "options": {
+                        "format": "password"
+                      }
+                    }
+                  ],
+                  "rule": {
+                    "effect": "SHOW",
+                    "condition": {
+                      "scope": "#/properties/calendar_provider",
+                      "schema": {
+                        "const": "google"
+                      }
+                    }
+                  }
                 }
               ]
             }
           ]
         },
         {
-          "type": "Category",
-          "label": "Releases",
+          "type": "Group",
+          "label": "Library access",
           "elements": [
             {
-              "type": "Group",
-              "label": "Date window",
-              "elements": [
-                {
-                  "type": "Control",
-                  "scope": "#/properties/ahead_days"
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/past_days"
-                }
-              ]
+              "type": "Label",
+              "text": "Grant exactly one Navidrome user in Users Permission below, and select the intended libraries in Library Permission. Turn off Allow all users when more than one account exists. Library write access is not needed."
             },
             {
-              "type": "Group",
-              "label": "Release formats",
-              "elements": [
-                {
-                  "type": "Control",
-                  "scope": "#/properties/include_albums"
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/include_eps"
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/include_singles"
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/include_broadcasts"
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/include_other"
-                }
-              ]
-            },
-            {
-              "type": "Group",
-              "label": "Standard and special releases",
-              "elements": [
-                {
-                  "type": "Label",
-                  "text": "Choose release formats above. For releases with secondary tags, any selected tag below is enough to include the release."
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/include_standard"
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/include_live"
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/include_compilations"
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/include_remixes"
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/include_soundtracks"
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/include_demos"
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/include_mixtapes"
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/include_dj_mixes"
-                }
-              ]
-            },
-            {
-              "type": "Group",
-              "label": "Spoken and other recordings",
-              "elements": [
-                {
-                  "type": "Control",
-                  "scope": "#/properties/include_spokenword"
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/include_interviews"
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/include_audiobooks"
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/include_audio_drama"
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/include_field_recordings"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "Category",
-          "label": "Local files",
-          "elements": [
-            {
-              "type": "Group",
-              "label": "Generated files",
-              "elements": [
-                {
-                  "type": "Label",
-                  "text": "Reports are saved in Navidrome\u2019s data folder: plugins/release-radar/storage/"
-                },
-                {
-                  "type": "Label",
-                  "text": "Open upcoming-releases.html locally for the list and month calendar. Import music-releases.ics for dated calendar events. Copy the HTML again after updates if viewing it on another device."
-                },
-                {
-                  "type": "Label",
-                  "text": "state.json and integrations.json are private working files. Keep them out of shared folders. Reports are written only to plugin storage; the plugin does not serve files over the web."
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "Category",
-          "label": "Notifications",
-          "elements": [
-            {
-              "type": "Group",
-              "label": "ntfy alerts",
-              "elements": [
-                {
-                  "type": "Control",
-                  "scope": "#/properties/ntfy_server"
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/ntfy_topic"
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/ntfy_access_token",
-                  "options": {
-                    "format": "password"
-                  }
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/ntfy_notify_initial"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "Category",
-          "label": "Calendar",
-          "elements": [
-            {
-              "type": "Group",
-              "label": "Calendar destination",
-              "elements": [
-                {
-                  "type": "Control",
-                  "scope": "#/properties/calendar_provider"
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/calendar_namespace"
-                }
-              ]
-            },
-            {
-              "type": "Group",
-              "label": "CalDAV credentials",
-              "elements": [
-                {
-                  "type": "Control",
-                  "scope": "#/properties/caldav_calendar_url"
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/caldav_username"
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/caldav_app_password",
-                  "options": {
-                    "format": "password"
-                  }
-                }
-              ],
-              "rule": {
-                "effect": "SHOW",
-                "condition": {
-                  "scope": "#/properties/calendar_provider",
-                  "schema": {
-                    "const": "caldav"
-                  }
-                }
-              }
-            },
-            {
-              "type": "Group",
-              "label": "Google Calendar credentials",
-              "elements": [
-                {
-                  "type": "Control",
-                  "scope": "#/properties/google_calendar_id"
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/google_client_id"
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/google_client_secret",
-                  "options": {
-                    "format": "password"
-                  }
-                },
-                {
-                  "type": "Control",
-                  "scope": "#/properties/google_refresh_token",
-                  "options": {
-                    "format": "password"
-                  }
-                }
-              ],
-              "rule": {
-                "effect": "SHOW",
-                "condition": {
-                  "scope": "#/properties/calendar_provider",
-                  "schema": {
-                    "const": "google"
-                  }
-                }
-              }
+              "type": "Label",
+              "text": "MusicBrainz lookups require no personal account or email. They use the plugin\u2019s project identification."
             }
           ]
         }

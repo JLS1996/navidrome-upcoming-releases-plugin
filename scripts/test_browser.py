@@ -13,12 +13,13 @@ with sync_playwright() as p:
  page.set_content((root/'dist/preview.html').read_text())
  assert page.locator('.release').count()==3
  assert page.locator('.release:visible').count()==3
+ assert page.locator('#release-count').inner_text()=='3'
  assert page.locator('h1').inner_text()=='Your music.\nSomething to look forward to.'
  page.locator('#type').select_option('Live');assert page.locator('.release:visible').count()==1
  assert 'Live' in page.locator('.release:visible .tag').inner_text()
  page.locator('#type').select_option('')
  page.locator('#search').fill('glass orchard');assert page.locator('.release:visible').count()==1
- page.locator('#search').fill('not in this library');assert page.locator('.release:visible').count()==0;assert page.locator('#empty').is_visible()
+ page.locator('#search').fill('not in this library');assert page.locator('.release:visible').count()==0;assert page.locator('#empty').is_visible();assert page.locator('#release-count').inner_text()=='0'
  page.locator('#search').fill('');page.locator('#type').select_option('EP');assert page.locator('.release:visible').count()==1
  page.locator('#period').select_option('Upcoming');assert page.locator('.release:visible').count()==0
  page.locator('#type').select_option('');page.locator('#period').select_option('Date uncertain');assert page.locator('.release:visible').count()==1
@@ -28,8 +29,20 @@ with sync_playwright() as p:
  page.locator('#calendar-view').click();assert page.locator('#calendar').is_visible()
  assert page.locator('#month-label').inner_text()=='November 2026'
  assert page.locator('.calendar-event').count()==1
+ assert page.locator('#day-release-list .day-release').count()==1
+ assert 'Slow Light' in page.locator('#day-release-list').inner_text()
+ page.locator('.day-select[data-date="2026-11-06"]').click()
+ page.keyboard.press('ArrowRight')
+ assert page.locator('.day-select[data-date="2026-11-07"]').get_attribute('aria-pressed')=='true'
+ assert page.locator('.day-select[tabindex="0"]').count()==1
+ assert page.locator('#day-empty').is_visible()
  page.locator('#next-month').click();assert page.locator('#month-label').inner_text()=='December 2026'
  assert page.locator('.calendar-event').count()==1
+ assert 'A Place in the Morning' in page.locator('#day-release-list').inner_text()
+ page.locator('.day-select[data-date="2026-12-31"]').click();page.keyboard.press('ArrowRight')
+ assert page.locator('#month-label').inner_text()=='January 2027'
+ assert page.locator('.day-select[data-date="2027-01-01"]').get_attribute('aria-pressed')=='true'
+ page.locator('#previous-month').click()
  assert page.locator('#uncertain-dates').is_visible()
  page.locator('#search').fill('glass orchard');assert page.locator('.calendar-event').count()==0
  assert page.locator('#uncertain-list .uncertain-item').count()==1
@@ -56,9 +69,41 @@ with sync_playwright() as p:
  page.screenshot(path=str(out/'mobile.png'),full_page=True)
  page.locator('#calendar-view').click()
  assert not page.evaluate('document.documentElement.scrollWidth > innerWidth')
- page.screenshot(path=str(out/'calendar-mobile.png'),full_page=True)
+ for width in [320,375,390,430,768,1280]:
+  page.set_viewport_size({'width':width,'height':844})
+  assert not page.evaluate('document.documentElement.scrollWidth > innerWidth')
+  assert page.locator('.calendar-scroll').evaluate('(n)=>n.scrollWidth<=n.clientWidth+1'),'month grid requires sideways scrolling at '+str(width)
+  assert page.locator('.calendar-grid').evaluate('(n)=>n.scrollWidth<=n.clientWidth+1'),'calendar cells overflow at '+str(width)
+  headers=page.locator('.weekday').evaluate_all('(nodes)=>nodes.map(n=>{const r=n.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top}})')
+  assert len(headers)==7 and max(h['right'] for h in headers)<=width and min(h['left'] for h in headers)>=0
+  assert len(set(h['top'] for h in headers))==1,'weekdays must fit in one row'
+  page.locator('.day-select[data-date="2026-12-04"]').click()
+  assert 'A Place in the Morning' in page.locator('#day-release-list').inner_text()
+  if width<=640:
+   assert page.locator('.calendar-event:visible').count()==0
+   assert page.locator('.day-count:visible').count()==1
+  else:assert page.locator('.calendar-event:visible').count()==1
+  if width==375:
+   page.screenshot(path=str(out/'calendar-mobile.png'),full_page=True)
+   page.locator('#calendar').screenshot(path=str(out/'calendar-mobile-component.png'))
+ # Multiple releases and long metadata must remain readable below a compact cell.
+ page.set_viewport_size({'width':320,'height':844})
+ page.evaluate("const original=document.querySelector('.release[data-date=\"2026-12-04\"]'),copy=original.cloneNode(true);copy.querySelector('h2 a').textContent='Long album title '.repeat(24);copy.querySelector('.artist').textContent='Long artist name '.repeat(24);document.querySelector('.list').append(copy)")
+ # Rows are captured once on page load, so reload the same synthetic fixture.
+ fixture=page.content()
+ stress=browser.new_page(viewport={'width':320,'height':844});stress.context.set_offline(True);stress.on('pageerror',lambda e:errors.append(str(e)));stress.on('request',lambda r:requests.append(r.url));stress.set_content(fixture)
+ stress.locator('#calendar-view').click();stress.locator('#next-month').click()
+ stress.locator('.day-select[data-date="2026-12-04"]').click()
+ assert stress.locator('#day-release-list .day-release').count()==2
+ assert stress.locator('.day-count:visible').inner_text()=='2'
+ assert not stress.evaluate('document.documentElement.scrollWidth > innerWidth')
+ with stress.expect_download() as restored:
+  stress.locator('#calendar-download').click()
+ assert pathlib.Path(restored.value.path()).read_bytes()==data,'saved HTML could not rebuild its calendar download'
+ stress.close()
  # Simulate a device with file sharing, then a preview that rejects sharing.
  mobile=browser.new_page(viewport={'width':390,'height':844})
+ mobile.context.set_offline(True);mobile.on('pageerror',lambda e:errors.append(str(e)));mobile.on('request',lambda r:requests.append(r.url))
  # set_content does not run context init scripts, so install the fixture explicitly.
  mobile.evaluate("window.fixtureShared=[];Object.defineProperty(navigator,'canShare',{configurable:true,value:()=>true});Object.defineProperty(navigator,'share',{configurable:true,value:async(d)=>{window.fixtureShared.push({name:d.files[0].name,text:await d.files[0].text()})}})")
  mobile.set_content((root/'dist/preview.html').read_text())
@@ -72,9 +117,16 @@ with sync_playwright() as p:
  mobile.locator('#calendar-share').click()
  assert mobile.locator('#calendar-text').is_visible()
  assert 'Sharing is unavailable' in mobile.locator('#download-status').inner_text()
- mobile.close()
+ saved_mobile=mobile.content()
+ reopened=browser.new_page();reopened.context.set_offline(True);reopened.on('pageerror',lambda e:errors.append(str(e)));reopened.on('request',lambda r:requests.append(r.url));reopened.set_content(saved_mobile)
+ assert reopened.locator('#calendar-share').is_hidden()
+ assert reopened.locator('#calendar-download').is_visible()
+ with reopened.expect_download() as restored:
+  reopened.locator('#calendar-download').click()
+ assert pathlib.Path(restored.value.path()).read_bytes()==data
+ reopened.close();mobile.close()
  assert not errors,errors
  assert not [u for u in requests if u.startswith(('http:','https:'))],requests
  browser.close()
- (out/'results.json').write_text(json.dumps({'file_protocol':'blocked by managed Chromium policy; rendered offline from identical HTML instead','release_count':3,'filters':True,'empty_state':True,'responsive':True,'month_calendar':True,'uncertain_dates_separate':True,'ics_download':True,'calendar_text_fallback':True,'mobile_share_and_fallback':True,'page_errors':errors,'network_requests':requests},indent=2))
+ (out/'results.json').write_text(json.dumps({'file_protocol':'blocked by managed Chromium policy; rendered offline from identical HTML instead','release_count':3,'filters':True,'empty_state':True,'responsive':True,'month_calendar':True,'seven_columns_fit_320_to_1280':True,'selected_day_details':True,'calendar_keyboard_navigation':True,'uncertain_dates_separate':True,'ics_download':True,'calendar_text_fallback':True,'saved_html_download_roundtrip':True,'mobile_share_and_fallback':True,'page_errors':errors,'network_requests':requests},indent=2))
  print('PASS: offline list and calendar, shared filters, uncertain dates, ICS download, desktop/mobile layout; no external requests or JavaScript errors.')

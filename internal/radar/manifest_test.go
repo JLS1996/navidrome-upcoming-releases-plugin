@@ -50,8 +50,11 @@ func TestManifestCredentialControlsRenderWithoutUnknownFormats(t *testing.T) {
 	if m.Version != Version {
 		t.Fatal("manifest and runtime versions differ")
 	}
-	if m.Config.UI.Type != "Categorization" {
-		t.Fatal("configuration needs clearly categorized tabs")
+	if m.Config.UI.Type != "VerticalLayout" || len(m.Config.UI.Elements) != 3 {
+		t.Fatal("configuration needs information outside its tabs")
+	}
+	if m.Config.UI.Elements[0].Type != "Group" || m.Config.UI.Elements[0].Label != "Generated files" || m.Config.UI.Elements[1].Type != "Categorization" || m.Config.UI.Elements[2].Label != "Library access" {
+		t.Fatal("generated file and access information must surround the tabs")
 	}
 	controls := map[string]string{}
 	labels := map[string]bool{}
@@ -74,7 +77,7 @@ func TestManifestCredentialControlsRenderWithoutUnknownFormats(t *testing.T) {
 		}
 	}
 	walk(m.Config.UI)
-	for _, label := range []string{"General", "Releases", "Local files", "Notifications", "Calendar"} {
+	for _, label := range []string{"General", "Releases", "Notifications", "Calendar"} {
 		if !labels[label] {
 			t.Fatal("missing settings category", label)
 		}

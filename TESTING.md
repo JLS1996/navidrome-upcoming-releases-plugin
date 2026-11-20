@@ -8,10 +8,13 @@ Tested with Navidrome 0.64.2, Go 1.25.x and TinyGo 0.40.1.
   services. They exercise grants-only identity, storage-only output, 429/503
   recovery, ntfy alerts, CalDAV writes, Google event CRUD, restarts and revocation.
 - The Navidrome configuration-form test checks categorized settings, spacing,
-  release selectors, masked credentials and saving/reloading. CI also checks the
+  release selectors, information outside the tabs, masked credentials and saving/reloading. CI also checks the
   manifest's schema and UI controls.
 - Offline browser tests check list/calendar filters, Live selection, uncertain
-  dates, direct downloads, simulated mobile sharing and its text fallback.
+  dates, direct downloads, simulated mobile sharing and its text fallback. The
+  calendar fits seven columns from 320 px upward and supports selected-day details
+  and keyboard navigation. Saved HTML is reopened to verify its download remains
+  usable without the original Blob URL.
 - An opt-in live Northlane check verifies public MusicBrainz metadata through the
   lookup, filter, HTML and calendar-export code. Normal tests require no external
   service or personal account.

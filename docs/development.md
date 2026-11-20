@@ -66,7 +66,10 @@ python3 scripts/test_browser.py
 
 Use installed Chromium, or install Playwright's browser. The suite renders the
 HTML offline and checks list/calendar filters, navigation, uncertain dates and
-calendar download, optional mobile file sharing and its text fallback. Sharing tests
+calendar download, mobile file sharing and its text fallback. Calendar checks
+cover all seven columns at widths from 320 to 1280 pixels, selected-day details,
+long titles, multiple releases, keyboard navigation across month boundaries, and
+calendar downloads after saving and reopening the HTML. Sharing tests
 simulate the browser API; they do not replace a real-device Safari check. Direct `file://` navigation may be blocked by managed browser
 policies; verify local file opening in your deployment.
 
@@ -77,7 +80,7 @@ NAVIDROME_BIN=/path/to/navidrome python3 scripts/test_config_form.py
 ```
 
 It reproduces the old unsupported-format error, then checks that the fixed schema
-renders, checks categorized settings and field spacing at desktop and narrow
+renders, checks the always-visible file/access information and field spacing at desktop and narrow
 viewport sizes, masks credential inputs and saves/reloads release-type choices and grant-based user
 selection without enabling any external integration. The native manifest test runs in CI to prevent putting
 UI-only password formats back into JSON Schema.

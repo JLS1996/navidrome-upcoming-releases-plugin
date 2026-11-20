@@ -22,6 +22,10 @@ The HTML contains its own data, styles, scripts and calendar export. It works
 offline; only source links require internet. Refresh an open local file to load
 updated results. A copied file is a snapshot: copy it again to get newer data.
 
+The calendar fits all seven weekdays on mobile. Select a day to read the full
+release titles below the grid; badges show how many releases are on each day.
+Arrow keys move the selected day when using a keyboard.
+
 On mobile, open the HTML in a full browser. Use **Save or share calendar** when
 available. See [calendar export](integrations.md#local-calendar-export) for fallback
 options and importing `.ics` files.

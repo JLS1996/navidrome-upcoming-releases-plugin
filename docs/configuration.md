@@ -1,6 +1,10 @@
 # Configuration
 
-## General
+The settings tabs are **General**, **Releases**, **Notifications** and **Calendar**.
+Generated file information stays above the tabs; library access guidance appears
+below the tabs, immediately before Navidrome’s permission cards.
+
+## Library access
 
 Grant exactly **one user** in Navidrome's **Users Permission** card and select the
 libraries to scan in **Library Permission**. Turn off **Allow all users** when the
@@ -9,6 +13,10 @@ libraries and the libraries granted to the plugin.
 
 MusicBrainz lookups need no account, API key or personal email. Requests identify
 the plugin by its project URL and respect MusicBrainz's rate limits.
+
+## General
+
+Artist matching and manual refresh are in this tab.
 
 | Setting | Default | Use |
 |---|---|---|
@@ -61,11 +69,13 @@ These categories follow [MusicBrainz release-group types](https://musicbrainz.or
 A release with only a year or month remains visible when it overlaps your window,
 but is excluded from dated calendar events.
 
-## Local files
+## Generated files
 
-The Local files tab explains the generated reports. Files stay in
+The information panel above the tabs explains the local reports. They stay in
 `<DataFolder>/plugins/release-radar/storage/`; there is no export-directory setting.
-See [installation](installation.md) for opening or copying them.
+Optional integrations publish release information to ntfy or a configured CalDAV
+or Google Calendar destination. They do not expose the local report files through
+a web endpoint. See [installation](installation.md) for opening or copying files.
 
 ## Notifications and Calendar
 

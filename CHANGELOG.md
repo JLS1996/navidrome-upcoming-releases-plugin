@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.3.1
+
+- Fit all seven calendar columns on mobile without sideways scrolling.
+- Show compact release counts with full titles below the selected day.
+- Add keyboard date navigation and distinguish today from the selected day.
+- Move Generated files above the settings tabs and Library access before permissions.
+- Clarify local file storage versus optional outbound ntfy and calendar publishing.
+- Keep long artist names and release tags from overflowing the report.
+- Keep release counts and the report date window accurate after filtering.
+- Rebuild downloads from embedded calendar text so browser-saved HTML stays usable.
+- Avoid building hidden calendars.
+- Limit search to artist names and release titles; group dates once per calendar render.
+- Update setup, configuration and validation documentation.
+
 ## 0.3.0
 
 - Select albums, EPs, singles, broadcasts and other formats independently.

@@ -2,6 +2,10 @@
 
 ## Local calendar export
 
+Local report files remain in plugin storage. When you enable an integration,
+selected release information is sent outbound to that destination: ntfy, CalDAV,
+or Google Calendar. This does not provide incoming web access to Navidrome files.
+
 The plugin also generates `<DataFolder>/plugins/release-radar/storage/music-releases.ics`.
 The HTML embeds the same calendar for local downloading or sharing,
 so it works even when you copy only the HTML file. It exports the complete report's

@@ -58,7 +58,7 @@ try:
   page.reload();page.get_by_label('Artist ID overrides',exact=True).wait_for()
   assert page.get_by_text('Unable to render configuration form.',exact=False).count()==0
   titles={name:fixed['config']['schema']['properties'][name]['title'] for name in secret_fields}
-  categories=['General','Releases','Local files','Notifications','Calendar']
+  categories=['General','Releases','Notifications','Calendar']
   def category(name):
    try:page.get_by_role('tab',name=name,exact=True).click(timeout=5000)
    except Exception:
@@ -67,7 +67,13 @@ try:
     print('Category failure artifacts:',base)
     raise
   def provider(value):
-   page.get_by_role('button',name=fixed['config']['schema']['properties']['calendar_provider']['title'],exact=True).click()
+   try:page.get_by_role('button',name=re.compile('^'+re.escape(fixed['config']['schema']['properties']['calendar_provider']['title'])+r'(?:\s|$)')).click(timeout=5000)
+   except Exception:
+    page.screenshot(path=str(base/'provider-failure.png'),full_page=True,animations='disabled')
+    (base/'provider-failure.txt').write_text(page.locator('body').inner_text())
+    (base/'provider-failure.html').write_text(page.content())
+    print('Provider failure artifacts:',base)
+    raise
    page.get_by_role('option',name=value,exact=True).click()
    page.get_by_role('listbox').wait_for(state='hidden')
   def assert_spacing():
@@ -83,6 +89,14 @@ try:
    assert card.evaluate('(n)=>n.scrollWidth<=n.clientWidth+1'),'configuration card overflows horizontally'
   for name in categories:
    category(name);assert_spacing()
+   files=page.get_by_text('Generated files',exact=True).bounding_box()
+   tabs=page.get_by_role('tablist').bounding_box()
+   access=page.get_by_text('Library access',exact=True).bounding_box()
+   permission=page.get_by_role('heading',name='Users Permission',exact=True).bounding_box()
+   assert files and tabs and access and permission
+   assert files['y']<tabs['y']<access['y']<permission['y'],'information was not placed outside tabs above permission cards'
+  assert page.get_by_role('tab',name='Local files',exact=True).count()==0
+  assert page.get_by_role('heading',name=re.compile('^Optional integrations send release information')).is_visible()
   category('Calendar')
   assert page.get_by_label(titles['caldav_app_password'],exact=True).count()==0
   assert page.get_by_label(titles['google_client_secret'],exact=True).count()==0
@@ -98,7 +112,7 @@ try:
   category('General')
   assert page.get_by_label('Navidrome username',exact=True).count()==0
   assert page.get_by_label('MusicBrainz contact',exact=True).count()==0
-  category('Local files');assert page.get_by_label('Export library ID',exact=True).count()==0
+  assert page.get_by_label('Export library ID',exact=True).count()==0
   category('Releases')
   for title in ['Albums','EPs','Singles','Live','Compilations','Demos','Field recordings']:
    assert page.get_by_role('checkbox',name=title,exact=True).count()==1
