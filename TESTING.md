@@ -2,12 +2,12 @@
 
 Tested with Navidrome 0.64.2, Go 1.25.x and TinyGo 0.40.1.
 
-- Native tests cover artwork validation/cache/redirects, release-type selectors, dates, shared releases, pagination,
+- Native tests cover owned-album matching/pagination, artwork validation/cache/redirects, release-type selectors, dates, shared releases, pagination,
   retry/backoff, escaping, state validation and safe file writes.
 - Integration tests run the actual WASM plugin in Navidrome with disposable local
   services. They exercise grants-only identity, storage-only output, 429/503
   recovery, ntfy alerts, CalDAV writes, Google event CRUD, idle upgrade refresh,
-  PNG/JPEG decoding, both saved refresh-switch transitions, artwork toggles,
+  owned-release exclusion, PNG/JPEG decoding, both saved refresh-switch transitions, artwork toggles,
   restarts and revocation.
 - The Navidrome configuration-form test checks categorized settings, spacing,
   release selectors, the refresh switch above the tabs, paragraph spacing, Matching

@@ -47,6 +47,7 @@ func str(key, def string) string {
 func config() (radar.Config, error) {
 	c := radar.DefaultConfig()
 	c.CoverArt = str("cover_art", "false") == "true"
+	c.ExcludeOwned = str("exclude_owned", "false") == "true"
 	c.CalendarNamespace = str("calendar_namespace", "release-radar")
 	var err error
 	c.AheadDays, err = strconv.Atoi(str("ahead_days", "90"))
@@ -165,6 +166,35 @@ func (p *plugin) tick() error {
 		return finish(fmt.Errorf("assign at least one library shared by the selected user and plugin"))
 	}
 	refreshChanged := s.ApplyRefresh(str("manual_refresh", "false") == "true")
+	if c.ExcludeOwned {
+		c.OwnershipReady = s.OwnedReady
+		c.OwnedAlbums = s.OwnedAlbums
+		if s.OwnedScanDue(now, refreshChanged) && now.Unix() >= s.OwnedRetryAt {
+			q := url.Values{"u": {c.Username}, "type": {"alphabeticalByName"}, "size": {"500"}, "offset": {strconv.Itoa(s.OwnedOffset)}}
+			for _, id := range ids {
+				q.Add("musicFolderId", strconv.Itoa(id))
+			}
+			raw, scanErr := host.Subsonic("getAlbumList2?" + q.Encode())
+			complete := false
+			if scanErr == nil {
+				complete, scanErr = s.OwnedPage(raw, now)
+			}
+			if scanErr != nil {
+				s.OwnedRetryAt = now.Unix() + 60
+				s.OwnedOffset = 0
+				s.OwnedPending = nil
+				return finish(fmt.Errorf("owned-album scan failed; retrying in one minute"))
+			}
+			if !complete {
+				return finish(fmt.Errorf("Checking library albums before excluding owned releases: %d scanned", s.OwnedOffset))
+			}
+			c.OwnershipReady = true
+			c.OwnedAlbums = s.OwnedAlbums
+		}
+		if s.OwnedScanning {
+			return finish(fmt.Errorf("Owned-album scan is waiting to retry; integrations are paused"))
+		}
+	}
 	if (s.RefreshPending || now.Unix()-s.DiscoveredAt >= 86400) && now.Unix() >= s.NextDiscovery {
 		artists, err := discover(c.Username, ids)
 		if err != nil {
@@ -177,7 +207,7 @@ func (p *plugin) tick() error {
 	if s.NextDiscovery == 0 {
 		s.Problem = ""
 	}
-	view := radar.Version + "/" + fmt.Sprintf("%d/%d/%v/%v/%t", c.AheadDays, c.PastDays, c.PrimaryTypes, c.SecondaryTypes, c.IncludeStandard) + fmt.Sprint(c.CoverArt) + ic.Fingerprint()
+	view := radar.Version + "/" + fmt.Sprintf("%d/%d/%v/%v/%t", c.AheadDays, c.PastDays, c.PrimaryTypes, c.SecondaryTypes, c.IncludeStandard) + fmt.Sprint(c.CoverArt, c.ExcludeOwned, s.OwnedAt) + ic.Fingerprint()
 	viewChanged := s.ViewConfig != view
 	s.ViewConfig = view
 	d, loadErr := radar.LoadDeliveries(dir)

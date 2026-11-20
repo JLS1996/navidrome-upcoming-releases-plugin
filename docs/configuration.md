@@ -75,6 +75,24 @@ rights holders; the plugin's MIT license applies to its code, not downloaded cov
 Dates use UTC. Changing filters updates cached results without downloading the
 artist catalogs again.
 
+**Exclude releases already in library** is off by default. When enabled, the
+plugin compares report releases with albums in the selected user's granted
+libraries. Artist IDs (or exact artist names when IDs are absent) and album titles
+must match, ignoring capitalization and repeated spaces. Tagged release types are
+checked to distinguish formats and special editions such as live recordings.
+
+Any matching local album record counts, including a partial album; track-by-track
+completeness is not checked. This is not a fuzzy match: renamed or differently titled editions can remain
+visible. Navidrome's Subsonic album API exposes edition IDs rather than the release
+group IDs used by this plugin, so those IDs are not compared directly.
+
+The library album list refreshes every 15 minutes and when you manually refresh.
+It is scanned in resumable pages. Integrations pause during a scan so an incomplete
+inventory cannot produce ownership-based notifications or calendar deletions.
+The setting applies to HTML, `.ics`, notifications, calendar sync and cover fetching.
+Scanning supports up to 100,000 library albums; failures retain the previous snapshot
+and show a retry status. Disabling it restores cached releases immediately.
+
 Select the release formats you want:
 
 | Format | Default |

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.0
+
+- Add an optional Releases setting to exclude music already in the granted libraries.
+- Match exact artist/title pairs and check release types when tagged.
+- Apply ownership filtering consistently to reports, calendars, notifications and artwork.
+- Refresh the local album inventory in resumable pages without extra MusicBrainz requests.
+- Preserve inventory snapshots on failure and pause integrations until scans complete.
+
 ## 0.5.0
 
 - Separate configuration instructions into paragraphs with space before fields and groups.

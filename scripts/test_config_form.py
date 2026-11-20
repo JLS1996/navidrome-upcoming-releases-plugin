@@ -124,6 +124,7 @@ try:
   assert page.get_by_label('MusicBrainz contact',exact=True).count()==0
   assert page.get_by_label('Export library ID',exact=True).count()==0
   category('Releases')
+  page.get_by_role('checkbox',name='Exclude releases already in library',exact=True).check()
   for title in ['Albums','EPs','Singles','Live','Compilations','Demos','Field recordings']:
    assert page.get_by_role('checkbox',name=title,exact=True).count()==1
   page.get_by_role('checkbox',name='Live',exact=True).check()
@@ -134,7 +135,7 @@ try:
   record=api('/api/plugin/release-radar');values=json.loads(record['config'])
   assert not record['enabled'],'test must not enable outbound integrations'
   for removed in ['username','contact','export_library_id','include_secondary']:assert removed not in values
-  assert values['manual_refresh'] is True
+  assert values['manual_refresh'] is True and values['exclude_owned'] is True
   assert values['include_live'] is True and values['include_singles'] is True and values['cover_art'] is True
   for name in secret_fields:assert values[name]=='fixture-'+name
   page.reload();page.get_by_role('checkbox',name='Download cover art',exact=True).wait_for()

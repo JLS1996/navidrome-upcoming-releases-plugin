@@ -12,7 +12,7 @@ for d in ['music','data/plugins','cache']:(base/d).mkdir(parents=True,exist_ok=T
 mbid='a74b1b7f-71a5-4011-9441-d0b5e4122711'
 rid='11111111-2222-4333-8444-555555555555'
 subprocess.run(['ffmpeg','-hide_banner','-loglevel','error','-f','lavfi','-i','sine=frequency=440:duration=1','-metadata','artist=Radiohead','-metadata','album_artist=Radiohead','-metadata','album=Integration fixture','-metadata','title=Generated test tone','-metadata','MUSICBRAINZ_ARTISTID='+mbid,'-metadata','MUSICBRAINZ_ALBUMARTISTID='+mbid,str(base/'music/test.flac')],check=True)
-requests=[];version=[1];rate_limit=[429,503]
+requests=[];version=[1];rate_limit=[429,503];title_override=[None]
 def png_chunk(kind,body):return struct.pack('>I',len(body))+kind+body+struct.pack('>I',zlib.crc32(kind+body)&0xffffffff)
 art_image=b'\x89PNG\r\n\x1a\n'+png_chunk(b'IHDR',struct.pack('>IIBBBBB',8,8,8,2,0,0,0))+png_chunk(b'IDAT',zlib.compress((b'\0'+b'\x60\xa0\x30'*8)*8))+png_chunk(b'IEND',b'')
 art_jpeg=subprocess.run(['ffmpeg','-hide_banner','-loglevel','error','-i','pipe:0','-frames:v','1','-f','image2pipe','-vcodec','mjpeg','pipe:1'],input=art_image,stdout=subprocess.PIPE,check=True).stdout
@@ -46,7 +46,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
   if rate_limit:
    return self.reply(rate_limit.pop(0),headers={'Retry-After':'3'})
   date=(datetime.date.today()+datetime.timedelta(days=10+version[0])).isoformat()
-  group={'id':rid,'title':'[fixture] Updated release '+str(version[0])+' <script>window.pwned=1</script>','first-release-date':date,'primary-type':'Album'}
+  group={'id':rid,'title':title_override[0] or '[fixture] Updated release '+str(version[0])+' <script>window.pwned=1</script>','first-release-date':date,'primary-type':'Album'}
   body=json.dumps({'release-group-count':2,'release-group-offset':offset,'release-groups':[group]}).encode()
   self.reply(200,body,{'Content-Type':'application/json'})
  def do_POST(self):
@@ -202,6 +202,15 @@ try:
  wait_for(lambda:'class="release" data-type' not in (storage/'upcoming-releases.html').read_text())
  wait_for(lambda:len(google)==1)
  assert 'unrelated-user-event' in google
+ # Owned releases are hidden from every export, and toggling back uses the cache.
+ title_override[0]='Integration fixture'
+ update(config=settings(exclude_owned=True,manual_refresh=True,ahead_days=90,calendar_provider='none',ntfy_topic='',cover_art=False))
+ wait_for(lambda:completed() and state()['entries'][0]['releases'][0]['title']=='Integration fixture')
+ wait_for(lambda:state().get('ownedReady') and '<article class="release"' not in (storage/'upcoming-releases.html').read_text())
+ assert len(state()['ownedAlbums'])==1 and b'BEGIN:VEVENT' not in (storage/'music-releases.ics').read_bytes()
+ before_owned_toggle=len(requests);update(config=settings(exclude_owned=False))
+ wait_for(lambda:'<article class="release"' in (storage/'upcoming-releases.html').read_text())
+ assert len(requests)==before_owned_toggle,'owned filter toggle re-fetched metadata'
  # A user can lose a library while the plugin keeps its own library grant.
  (base/'empty-library').mkdir()
  empty=call('/api/library','POST',{'name':'Empty fixture library','path':str(base/'empty-library')})
@@ -221,7 +230,7 @@ try:
  wait_for(lambda:call('/api/plugin/release-radar').get('enabled') is False)
  before_revoked=len(requests);time.sleep(3);assert len(requests)==before_revoked,'requests continued after revocation'
  # Navidrome disables the runtime before it can clear old disk snapshots.
- results={'navidrome':'0.64.2','wasm_runtime':True,'storage_and_atomic_rename':True,'real_library_discovery':True,'http_429_backoff':True,'http_503_global_backoff_and_restart':True,'pagination_and_deduplication':True,'metadata_escaping_in_wasm':True,'restart_persistence':True,'changed_release_replaces_snapshot':True,'display_config_refresh':True,'manual_refresh_both_saved_transitions':True,'idle_upgrade_refresh_preserves_lookup_cache':True,'library_revocation_disables_plugin':True,'old_disk_snapshot_requires_manual_removal':True,'storage_only_reports':True,'storage_file_mode':oct(storage_mode),'legacy_identity_and_contact_ignored':True,'ntfy_baseline_and_update_alerts':True,'ntfy_notifications':len(notifications),'caldav_create_and_date_update':True,'google_token_refresh_create_patch_delete':True,'unrelated_calendar_event_preserved':True,'ics_file_export':True,'offline_artwork_redirect_cache_and_toggle':True,'wasm_png_and_jpeg_thumbnails':True,'fixture_requests':len(requests),'user_library_revocation_clears_cache':True,'automatic_granted_user_selection':True,'ambiguous_grants_stop_processing':True}
+ results={'navidrome':'0.64.2','wasm_runtime':True,'storage_and_atomic_rename':True,'real_library_discovery':True,'http_429_backoff':True,'http_503_global_backoff_and_restart':True,'pagination_and_deduplication':True,'metadata_escaping_in_wasm':True,'restart_persistence':True,'changed_release_replaces_snapshot':True,'display_config_refresh':True,'manual_refresh_both_saved_transitions':True,'idle_upgrade_refresh_preserves_lookup_cache':True,'library_revocation_disables_plugin':True,'old_disk_snapshot_requires_manual_removal':True,'storage_only_reports':True,'storage_file_mode':oct(storage_mode),'legacy_identity_and_contact_ignored':True,'ntfy_baseline_and_update_alerts':True,'ntfy_notifications':len(notifications),'caldav_create_and_date_update':True,'google_token_refresh_create_patch_delete':True,'unrelated_calendar_event_preserved':True,'ics_file_export':True,'exclude_owned_library_album_and_toggle':True,'offline_artwork_redirect_cache_and_toggle':True,'wasm_png_and_jpeg_thumbnails':True,'fixture_requests':len(requests),'user_library_revocation_clears_cache':True,'automatic_granted_user_selection':True,'ambiguous_grants_stop_processing':True}
  (ROOT/'dist/integration-results.json').write_text(json.dumps(results,indent=2));print(json.dumps(results,indent=2))
 finally:
  stop();fixture.shutdown()

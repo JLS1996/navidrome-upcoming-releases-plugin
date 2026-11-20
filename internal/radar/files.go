@@ -30,6 +30,9 @@ func Load(dir string) (State, error) {
 	if s.MusicBrainzFailures < 0 || s.MusicBrainzFailures > 7 || s.NextHTTP < 0 || s.NextDiscovery < 0 {
 		return s, fmt.Errorf("state.json contains invalid service retry metadata")
 	}
+	if s.OwnedOffset < 0 || s.OwnedOffset > 100000 || s.OwnedAt < 0 || s.OwnedRetryAt < 0 || len(s.OwnedAlbums) > 100000 || len(s.OwnedPending) > 100000 {
+		return s, fmt.Errorf("state.json contains invalid owned-album scan metadata")
+	}
 	for i := range s.Entries {
 		e := &s.Entries[i]
 		// Recover entries written by versions that exhausted artist retries
