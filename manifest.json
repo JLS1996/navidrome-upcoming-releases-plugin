@@ -1,7 +1,7 @@
 {
   "name": "Release Radar",
   "author": "Release Radar contributors",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Upcoming music releases with an offline list/calendar dashboard, .ics export, optional ntfy alerts and CalDAV or Google Calendar sync.",
   "permissions": {
     "storage": {
@@ -346,49 +346,11 @@
                 },
                 {
                   "type": "Group",
-                  "label": "Library ownership",
+                  "label": "Appearance",
                   "elements": [
                     {
                       "type": "Control",
-                      "scope": "#/properties/exclude_owned"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "Alternate editions with different titles may remain visible. This uses exact matching, not fuzzy title guesses."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    }
-                  ]
-                },
-                {
-                  "type": "Label",
-                  "text": "\u00a0"
-                },
-                {
-                  "type": "Group",
-                  "label": "Direct library credits",
-                  "elements": [
-                    {
-                      "type": "Label",
-                      "text": "Keep artists with at least one album or track credited to their own name. A split collaboration credit alone does not count."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Label",
-                      "text": "Checks only the selected libraries. The first scan may take a while; it repeats every 15 minutes and on manual refresh. Artist ID overrides do not bypass this filter."
-                    },
-                    {
-                      "type": "Label",
-                      "text": "\u00a0"
-                    },
-                    {
-                      "type": "Control",
-                      "scope": "#/properties/exclude_uncredited"
+                      "scope": "#/properties/cover_art"
                     }
                   ]
                 },
@@ -420,11 +382,43 @@
                 },
                 {
                   "type": "Group",
-                  "label": "Appearance",
+                  "label": "Exclusions",
                   "elements": [
                     {
                       "type": "Control",
-                      "scope": "#/properties/cover_art"
+                      "scope": "#/properties/exclude_owned"
+                    },
+                    {
+                      "type": "Label",
+                      "text": "Alternate editions with different titles may remain visible. This uses exact matching, not fuzzy title guesses."
+                    },
+                    {
+                      "type": "Label",
+                      "text": "\u00a0"
+                    },
+                    {
+                      "type": "Label",
+                      "text": "\u00a0"
+                    },
+                    {
+                      "type": "Label",
+                      "text": "Keep artists with at least one album or track credited to their own name. A split collaboration credit alone does not count."
+                    },
+                    {
+                      "type": "Label",
+                      "text": "\u00a0"
+                    },
+                    {
+                      "type": "Label",
+                      "text": "Checks only the selected libraries. The first scan may take a while; it repeats every 15 minutes and on manual refresh. Artist ID overrides do not bypass this filter."
+                    },
+                    {
+                      "type": "Label",
+                      "text": "\u00a0"
+                    },
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/exclude_uncredited"
                     }
                   ]
                 },

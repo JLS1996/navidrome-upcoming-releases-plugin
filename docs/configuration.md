@@ -24,12 +24,21 @@ and unfinished pages resume.
 
 ## General
 
-This tab contains the date window, library ownership filter, automatic artist
-matching, direct-credit filtering and optional cover art.
+The sections appear in this order: **Date window**, **Appearance**,
+**Automatic matching**, then **Exclusions**. Both library filters are under
+**Exclusions** and are off by default.
 
 **Days ahead** defaults to 90 (1–730). **Days back** defaults to 30 (0–365).
 Dates use UTC. Changing filters updates cached results without downloading the
 artist catalogs again.
+
+**Download cover art** is under Appearance. See [Cover art](#cover-art) for details.
+
+**Match artists without IDs** is on by default. It uses cautious exact-name
+matching when an artist has no MusicBrainz ID in its tags. IDs in tags and explicit
+overrides are more reliable.
+
+Both exclusion settings are grouped under **Exclusions**:
 
 **Exclude releases already in library** is off by default. When enabled, the
 plugin compares report releases with albums in the selected user's granted
@@ -48,10 +57,6 @@ inventory cannot produce ownership-based notifications or calendar deletions.
 The setting applies to HTML, `.ics`, notifications, calendar sync and cover fetching.
 Scanning supports up to 100,000 library albums; failures retain the previous snapshot
 and show a retry status. Disabling it restores cached releases immediately.
-
-**Match artists without IDs** is on by default. It uses cautious exact-name
-matching when an artist has no MusicBrainz ID in its tags. IDs in tags and explicit
-overrides are more reliable.
 
 **Exclude artists without directly credited music** is off by default. When enabled,
 it checks the whole album-artist and track-artist names in your selected libraries. For example, an entry called
