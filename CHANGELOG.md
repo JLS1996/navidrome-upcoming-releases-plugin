@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.2
+
+- Fix the configuration form failing on the unsupported JSON Schema `password` format.
+- Keep credential fields masked using Navidrome's JSONForms UI schema options.
+- Add regression checks for schema compatibility and real configuration-form rendering.
+
 ## 0.2.1
 
 - Recheck current user-library access before using cached data or sending updates.

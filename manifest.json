@@ -1,7 +1,7 @@
 {
   "name": "Release Radar",
   "author": "Release Radar contributors",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Upcoming music releases with an offline list/calendar dashboard, .ics export, optional ntfy alerts and CalDAV or Google Calendar sync.",
   "permissions": {
     "storage": {
@@ -119,8 +119,7 @@
         "ntfy_access_token": {
           "type": "string",
           "title": "ntfy access token",
-          "default": "",
-          "format": "password"
+          "default": ""
         },
         "ntfy_notify_initial": {
           "type": "boolean",
@@ -151,8 +150,7 @@
         "caldav_app_password": {
           "type": "string",
           "title": "CalDAV app password",
-          "default": "",
-          "format": "password"
+          "default": ""
         },
         "google_calendar_id": {
           "type": "string",
@@ -168,19 +166,130 @@
         "google_client_secret": {
           "type": "string",
           "title": "Google OAuth client secret",
-          "default": "",
-          "format": "password"
+          "default": ""
         },
         "google_refresh_token": {
           "type": "string",
           "title": "Google OAuth refresh token",
           "default": "",
-          "format": "password",
           "description": "Obtain locally with scripts/google_authorize.py; no Google credentials go into the HTML."
         }
       },
       "required": [
         "username"
+      ]
+    },
+    "uiSchema": {
+      "type": "VerticalLayout",
+      "elements": [
+        {
+          "type": "Control",
+          "scope": "#/properties/username"
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/contact"
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/ahead_days"
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/past_days"
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/include_singles"
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/include_secondary"
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/auto_match"
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/artist_overrides"
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/excluded_artists"
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/export_library_id"
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/refresh_token"
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/calendar_namespace"
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/ntfy_server"
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/ntfy_topic"
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/ntfy_access_token",
+          "options": {
+            "format": "password"
+          }
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/ntfy_notify_initial"
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/calendar_provider"
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/caldav_calendar_url"
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/caldav_username"
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/caldav_app_password",
+          "options": {
+            "format": "password"
+          }
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/google_calendar_id"
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/google_client_id"
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/google_client_secret",
+          "options": {
+            "format": "password"
+          }
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/google_refresh_token",
+          "options": {
+            "format": "password"
+          }
+        }
       ]
     }
   }

@@ -54,3 +54,10 @@ removal. It cannot delete files inside a revoked mount.
 The plugin opens no network listener and exposes no file download route. Open generated
 files locally or push updates to destinations you configure. Do not place report files
 in a public web root or add a reverse-proxy/static-file alias for them.
+
+## Updating from 0.2.1
+
+If the settings page reports `unknown format "password"`, replace the old
+`release-radar.ndp` with version 0.2.2 or newer, rescan plugins in Navidrome, and
+reload the plugin settings page. Existing configuration keys are unchanged; no
+manual credential-file edits are needed.
