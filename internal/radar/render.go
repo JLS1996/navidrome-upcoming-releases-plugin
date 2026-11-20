@@ -13,7 +13,7 @@ import (
 //go:embed dashboard.html
 var dashboard string
 
-type row struct{ Artist, Title, Type, TypeLabel, Secondary, Date, DateLabel, URL, Status, CheckedAt string }
+type row struct{ Artist, Title, Type, TypeLabel, Secondary, Date, DateLabel, URL, Status, CheckedAt, Cover string }
 type issue struct{ Name, ID, Message string }
 type report struct {
 	Generated                  string
@@ -47,7 +47,7 @@ func Render(s State, c Config, now time.Time) ([]byte, error) {
 		} else if r.Date == today {
 			status = "Today"
 		}
-		p.Rows = append(p.Rows, row{Artist: r.ArtistName, Title: r.Title, Type: r.PrimaryType(), TypeLabel: r.TypeLabel(), Secondary: strings.Join(r.Secondary, "|"), Date: r.Date, DateLabel: DateLabel(r.Date), URL: r.SourceURL(), Status: status, CheckedAt: r.CheckedAt})
+		p.Rows = append(p.Rows, row{Artist: r.ArtistName, Title: r.Title, Type: r.PrimaryType(), TypeLabel: r.TypeLabel(), Secondary: strings.Join(r.Secondary, "|"), Date: r.Date, DateLabel: DateLabel(r.Date), URL: r.SourceURL(), Status: status, CheckedAt: r.CheckedAt, Cover: coverFor(c, r.ID)})
 	}
 	sort.SliceStable(p.Rows, func(i, j int) bool {
 		a, b := p.Rows[i], p.Rows[j]
@@ -60,7 +60,17 @@ func Render(s State, c Config, now time.Time) ([]byte, error) {
 	esc := html.EscapeString
 	var rows, issues strings.Builder
 	for _, r := range p.Rows {
-		fmt.Fprintf(&rows, `<article class="release" data-type="%s" data-secondary="%s" data-period="%s" data-date="%s"><div class="date">%s<br><span class="meta">%s</span></div><div><div class="artist">%s</div><h2><a href="%s" target="_blank" rel="noopener noreferrer">%s</a></h2><div class="meta">Last checked: %s</div></div><span class="tag">%s</span></article>`, esc(r.Type), esc(r.Secondary), esc(r.Status), esc(r.Date), esc(r.DateLabel), esc(r.Status), esc(r.Artist), esc(r.URL), esc(r.Title), esc(r.CheckedAt), esc(r.TypeLabel))
+		class, style, cover := "release", "", ""
+		if r.Cover != "" {
+			class += " has-cover"
+			style = ` style="--cover-art:url('` + r.Cover + `')"`
+			cover = `<a class="cover-link" href="` + esc(r.URL) + `" rel="noreferrer" aria-label="Open ` + esc(r.Title) + ` on MusicBrainz"><img class="release-cover" src="` + r.Cover + `" alt="Cover art for ` + esc(r.Title) + `" width="250" height="250" loading="lazy" decoding="async"></a>`
+		}
+		checked := r.CheckedAt
+		if t, err := time.Parse(time.RFC3339, checked); err == nil {
+			checked = t.UTC().Format("2 Jan 2006, 15:04 UTC")
+		}
+		fmt.Fprintf(&rows, `<article class="%s"%s data-type="%s" data-secondary="%s" data-period="%s" data-date="%s"><div class="release-date date">%s<br><span class="meta">%s</span></div><div class="release-body"><div class="artist"><a href="%s" rel="noreferrer">%s</a></div><h2><a href="%s" rel="noreferrer">%s</a></h2><div class="meta">Last checked: %s</div></div><span class="tag">%s</span>%s</article>`, class, style, esc(r.Type), esc(r.Secondary), esc(r.Status), esc(r.Date), esc(r.DateLabel), esc(r.Status), esc(r.URL), esc(r.Artist), esc(r.URL), esc(r.Title), esc(checked), esc(r.TypeLabel), cover)
 	}
 	if len(p.Issues) > 0 {
 		summary := fmt.Sprintf("%d artists need attention", len(p.Issues))
@@ -80,6 +90,12 @@ func Render(s State, c Config, now time.Time) ([]byte, error) {
 			p.Problem += " · "
 		}
 		p.Problem += status
+	}
+	if s.ArtworkProblem != "" {
+		if p.Problem != "" {
+			p.Problem += " · "
+		}
+		p.Problem += "Cover art: " + s.ArtworkProblem
 	}
 	problem := ""
 	if s.IntegrationProblem != "" {
@@ -108,4 +124,13 @@ func Render(s State, c Config, now time.Time) ([]byte, error) {
 	// NewReplacer makes a single pass: inserted metadata is never interpreted as a template.
 	result := strings.NewReplacer("@@TYPE_OPTIONS@@", typeOptions.String(), "@@CALENDAR_EMPTY_NOTE@@", emptyNote, "@@CALENDAR_TEXT@@", esc(string(ics)), "@@ICS@@", base64.StdEncoding.EncodeToString(ics), "@@CALENDAR_STATS@@", esc(CalendarStats(s, c, c.EventNamespace(), now)), "@@TODAY@@", now.UTC().Format("2006-01-02"), "@@COUNT@@", fmt.Sprint(len(p.Rows)), "@@COMPLETE@@", fmt.Sprint(p.Complete), "@@ARTISTS@@", fmt.Sprint(p.Artists), "@@PENDING@@", fmt.Sprint(p.Pending), "@@PAST@@", fmt.Sprint(p.PastDays), "@@AHEAD@@", fmt.Sprint(p.AheadDays), "@@GENERATED@@", esc(p.Generated), "@@PROBLEM@@", problem, "@@ROWS@@", rows.String(), "@@ISSUES@@", issues.String(), "@@EMPTYHIDDEN@@", hidden).Replace(dashboard)
 	return []byte(result), nil
+}
+
+func coverFor(c Config, id string) string {
+	if c.CoverArt {
+		if data := c.Covers[id]; safeArtworkData(data) {
+			return data
+		}
+	}
+	return ""
 }

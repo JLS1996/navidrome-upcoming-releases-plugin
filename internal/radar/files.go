@@ -68,7 +68,7 @@ func Load(dir string) (State, error) {
 func AtomicWrite(dir, name string, b []byte) error { return atomicWrite(dir, name, b, 0600) }
 func atomicWrite(dir, name string, b []byte, mode os.FileMode) error {
 	// Fixed filenames only: configuration and metadata never become filesystem paths.
-	if name != "state.json" && name != "upcoming-releases.html" && name != "music-releases.ics" && name != "integrations.json" {
+	if name != "state.json" && name != "upcoming-releases.html" && name != "music-releases.ics" && name != "integrations.json" && name != "covers.json" {
 		return fmt.Errorf("unsupported output file")
 	}
 	tmp := filepath.Join(dir, name+".tmp")

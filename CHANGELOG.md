@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0
+
+- Replace the long Generated files panel with concise Info and in-tab setup guidance.
+- Link artist names, release titles and covers directly to their MusicBrainz release group.
+- Add optional offline cover thumbnails with a private cache and subtle card backgrounds.
+- Show artwork beside release cards and selected-day entries without shrinking the calendar.
+- Bound image sizes, cache usage and redirects; keep artwork requests separate from credentials.
+- Add artwork, link navigation, mobile layout and live public-thumbnail checks.
+
 ## 0.3.1
 
 - Fit all seven calendar columns on mobile without sideways scrolling.

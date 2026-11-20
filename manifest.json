@@ -1,7 +1,7 @@
 {
   "name": "Release Radar",
   "author": "Release Radar contributors",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Upcoming music releases with an offline list/calendar dashboard, .ics export, optional ntfy alerts and CalDAV or Google Calendar sync.",
   "permissions": {
     "storage": {
@@ -20,14 +20,17 @@
       "reason": "Read artists and MusicBrainz IDs internally"
     },
     "http": {
-      "reason": "Fetch MusicBrainz metadata and optionally publish ntfy notifications or sync a configured calendar.",
+      "reason": "Fetch MusicBrainz metadata, optional cover thumbnails, and configured notifications or calendar updates.",
       "requiredHosts": [
         "musicbrainz.org",
         "ntfy.sh",
         "www.googleapis.com",
         "oauth2.googleapis.com",
         "caldav.icloud.com",
-        "*.icloud.com"
+        "*.icloud.com",
+        "coverartarchive.org",
+        "archive.org",
+        "*.archive.org"
       ]
     }
   },
@@ -242,6 +245,12 @@
           "type": "boolean",
           "title": "Field recordings",
           "default": false
+        },
+        "cover_art": {
+          "type": "boolean",
+          "title": "Download cover art",
+          "default": false,
+          "description": "Fetch small Cover Art Archive thumbnails and embed them in the offline HTML. Adds network requests, a private cache and larger reports. Missing covers are skipped."
         }
       }
     },
@@ -250,23 +259,23 @@
       "elements": [
         {
           "type": "Group",
-          "label": "Generated files",
+          "label": "Info",
           "elements": [
             {
               "type": "Label",
-              "text": "Reports are saved in Navidrome\u2019s data folder: plugins/release-radar/storage/"
+              "text": "Finds upcoming and recent releases from your library. Checks resume automatically and refresh daily."
             },
             {
               "type": "Label",
-              "text": "Open upcoming-releases.html locally for the release list and calendar. Import music-releases.ics for dated events. Copy the HTML again to see updates on another device."
+              "text": "Open plugins/release-radar/storage/upcoming-releases.html from Navidrome\u2019s data folder in a browser. Refresh or copy a new version for updates."
             },
             {
               "type": "Label",
-              "text": "Optional integrations send release information to ntfy and your configured CalDAV or Google Calendar. Local report files stay in plugin storage; no incoming web download endpoint is added."
+              "text": "Tap an artist or release title to open MusicBrainz. Choose release types and optional covers in the settings below."
             },
             {
               "type": "Label",
-              "text": "Keep state.json and integrations.json private. They contain library metadata and integration state."
+              "text": "Alerts and calendar sync are optional; setup is in their tabs. Keep working JSON files private."
             }
           ]
         },
@@ -309,6 +318,16 @@
                     {
                       "type": "Control",
                       "scope": "#/properties/refresh_token"
+                    }
+                  ]
+                },
+                {
+                  "type": "Group",
+                  "label": "Appearance",
+                  "elements": [
+                    {
+                      "type": "Control",
+                      "scope": "#/properties/cover_art"
                     }
                   ]
                 }
@@ -437,6 +456,10 @@
                   "label": "ntfy alerts",
                   "elements": [
                     {
+                      "type": "Label",
+                      "text": "Subscribe to your topic in an ntfy client first. Leave Topic blank to disable alerts. Use an unguessable topic or a server with restricted read access for personal release information."
+                    },
+                    {
                       "type": "Control",
                       "scope": "#/properties/ntfy_server"
                     },
@@ -468,6 +491,10 @@
                   "label": "Calendar destination",
                   "elements": [
                     {
+                      "type": "Label",
+                      "text": "Local calendar: use Save or share calendar in the HTML, or import music-releases.ics. Imports are snapshots; choose a provider below for automatic sync."
+                    },
+                    {
                       "type": "Control",
                       "scope": "#/properties/calendar_provider"
                     },
@@ -481,6 +508,10 @@
                   "type": "Group",
                   "label": "CalDAV credentials",
                   "elements": [
+                    {
+                      "type": "Label",
+                      "text": "Create a dedicated releases calendar. Enter its full HTTPS collection URL and your provider\u2019s app credentials. A generic account/discovery URL will not work; redirects are not followed."
+                    },
                     {
                       "type": "Control",
                       "scope": "#/properties/caldav_calendar_url"
@@ -511,6 +542,14 @@
                   "type": "Group",
                   "label": "Google Calendar credentials",
                   "elements": [
+                    {
+                      "type": "Label",
+                      "text": "Create a dedicated Google calendar and copy its Calendar ID from Google Calendar settings. In Google Cloud, enable Calendar API and create an OAuth Desktop client."
+                    },
+                    {
+                      "type": "Label",
+                      "text": "On your computer, run scripts/google_authorize.py with --client-json client.json --output google-oauth.json. Authorize the calendar account, then copy the saved client ID, secret and refresh token below. OAuth apps in Testing mode may need periodic reauthorization."
+                    },
                     {
                       "type": "Control",
                       "scope": "#/properties/google_calendar_id"

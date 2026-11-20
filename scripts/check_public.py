@@ -6,7 +6,7 @@ It never prints matched values. Synthetic credentials in tests are intentional.
 import argparse,io,pathlib,re,struct,subprocess,zipfile
 
 DENIED_PARTS={'test-runtime','browser-results','__pycache__','.cache','.aws','.codex'}
-DENIED_NAMES={'auth.json','state.json','integrations.json','client.json','google-oauth.json','navidrome.toml'}
+DENIED_NAMES={'auth.json','state.json','integrations.json','covers.json','client.json','google-oauth.json','navidrome.toml'}
 PATTERNS={
  'private key':rb'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----',
  'GitHub token':rb'\b(?:gh[pousr]_[A-Za-z0-9_]{30,}|github_pat_[A-Za-z0-9_]{30,})',

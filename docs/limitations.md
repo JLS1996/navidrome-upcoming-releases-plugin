@@ -19,6 +19,8 @@
   music calendar. Changing accounts or destinations leaves old events in place.
 - Browser support for downloading or sharing local files varies. Use calendar text
   or copy the generated `.ics` directly if your browser cannot save it.
+- Cover art depends on community uploads. Missing or unsupported images are skipped;
+  enabling artwork increases report size and adds background requests.
 - Catalogs are stored in one JSON file. Very large libraries require more memory
   and take longer to scan. Catalogs above 50,000 release groups per artist are
   rejected with a reported error rather than silently truncated.

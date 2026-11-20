@@ -1,7 +1,7 @@
 # Configuration
 
 The settings tabs are **General**, **Releases**, **Notifications** and **Calendar**.
-Generated file information stays above the tabs; library access guidance appears
+A short Info panel stays above the tabs; library access guidance appears
 below the tabs, immediately before Navidrome’s permission cards.
 
 ## Library access
@@ -16,7 +16,7 @@ the plugin by its project URL and respect MusicBrainz's rate limits.
 
 ## General
 
-Artist matching and manual refresh are in this tab.
+Artist matching, manual refresh and the optional cover-art setting are in this tab.
 
 | Setting | Default | Use |
 |---|---|---|
@@ -35,6 +35,26 @@ section and the UUID from the correct MusicBrainz artist page:
 MusicBrainz IDs in your music tags or explicit overrides are more reliable than
 name matching. Various Artists is skipped. A refresh checks completed artists
 again while retaining their last successful results; unfinished pagination resumes.
+
+## Cover art
+
+Enable **General → Download cover art** to fetch front thumbnails from the
+[Cover Art Archive](https://musicbrainz.org/doc/Cover_Art_Archive/API). It is off by
+default and requires no account or paid API. The setting adds requests to Cover Art
+Archive and Internet Archive, separate from MusicBrainz lookups.
+
+Images are cached privately in `covers.json` and embedded in the HTML. The copied
+report needs no image server or browser image requests. Release cards and
+selected-day entries show covers on the right with a subtle blurred background.
+Missing covers are skipped, and artwork failures do not block release checks or
+calendar sync. Turning the setting off removes images from the generated report;
+the private cache is retained for reuse.
+
+The cache holds up to 100 releases and 4 MiB of encoded thumbnails. Each image is
+limited to 256 KiB and 512 pixels per side. Only JPEG and PNG are accepted. Missing
+images are checked again after a day. Cached images remain until the release
+leaves the report window or the cache is reset. Artwork belongs to its respective
+rights holders; the plugin's MIT license applies to its code, not downloaded covers.
 
 ## Releases
 
@@ -69,9 +89,10 @@ These categories follow [MusicBrainz release-group types](https://musicbrainz.or
 A release with only a year or month remains visible when it overlaps your window,
 but is excluded from dated calendar events.
 
-## Generated files
+## Info
 
-The information panel above the tabs explains the local reports. They stay in
+The panel above the tabs gives quick instructions for the local report. Calendar
+provider setup is inside the Calendar tab; notification setup is in Notifications. Local reports stay in
 `<DataFolder>/plugins/release-radar/storage/`; there is no export-directory setting.
 Optional integrations publish release information to ntfy or a configured CalDAV
 or Google Calendar destination. They do not expose the local report files through

@@ -125,8 +125,39 @@ with sync_playwright() as p:
   reopened.locator('#calendar-download').click()
  assert pathlib.Path(restored.value.path()).read_bytes()==data
  reopened.close();mobile.close()
+ # Artwork remains embedded, fits both card layouts, and never needs browser HTTP.
+ art=browser.new_page(viewport={'width':1280,'height':1000});art.context.set_offline(True)
+ art.on('pageerror',lambda e:errors.append(str(e)));art.on('request',lambda r:requests.append(r.url))
+ art.set_content((root/'dist/preview-covers.html').read_text())
+ art.wait_for_function("[...document.querySelectorAll('.release-cover')].every(n=>n.complete&&n.naturalWidth>0)")
+ assert art.locator('.release.has-cover').count()==3
+ for width in [320,375,390,430,768,1280]:
+  art.set_viewport_size({'width':width,'height':1000})
+  assert not art.evaluate('document.documentElement.scrollWidth>innerWidth'),'cover cards overflow at '+str(width)
+  assert art.locator('.release').evaluate_all('(nodes)=>nodes.every(n=>{const a=n.querySelector(".release-cover").getBoundingClientRect(),b=n.querySelector(".release-body").getBoundingClientRect(),r=n.getBoundingClientRect();return a.right<=r.right&&a.left>=b.right+6})'),'cover overlaps release text'
+  assert art.locator('.release.has-cover').first.evaluate('(n)=>getComputedStyle(n,"::before").backgroundImage.includes("data:image/png")')
+  if width==390:art.screenshot(path=str(out/'covers-mobile.png'),full_page=True)
+ art.screenshot(path=str(out/'covers-desktop.png'),full_page=True)
+ art.set_viewport_size({'width':390,'height':1000});art.locator('#calendar-view').click();art.locator('#next-month').click();art.locator('.day-select[data-date="2026-12-04"]').click()
+ assert art.locator('#day-release-list .release-cover').count()==1
+ assert not art.evaluate('document.documentElement.scrollWidth>innerWidth')
+ art.locator('#calendar').screenshot(path=str(out/'covers-calendar-mobile.png'))
+ art.close()
+ # Capture a real navigation while fulfilling locally: no public request is sent.
+ navigation=browser.new_page();navigation.context.set_offline(True)
+ navigation.set_content((root/'dist/preview.html').read_text())
+ artist=navigation.locator('.release .artist a').first
+ expected=navigation.locator('.release h2 a').first.get_attribute('href')
+ assert artist.get_attribute('href')==expected and artist.get_attribute('target') is None
+ intercepted=[]
+ def source_page(route):
+  intercepted.append(route.request.url);route.fulfill(status=200,content_type='text/html',body='<title>Local MusicBrainz navigation fixture</title>')
+ navigation.route('https://musicbrainz.org/**',source_page)
+ artist.click();navigation.wait_for_url(expected)
+ assert intercepted==[expected]
+ navigation.close()
  assert not errors,errors
  assert not [u for u in requests if u.startswith(('http:','https:'))],requests
  browser.close()
- (out/'results.json').write_text(json.dumps({'file_protocol':'blocked by managed Chromium policy; rendered offline from identical HTML instead','release_count':3,'filters':True,'empty_state':True,'responsive':True,'month_calendar':True,'seven_columns_fit_320_to_1280':True,'selected_day_details':True,'calendar_keyboard_navigation':True,'uncertain_dates_separate':True,'ics_download':True,'calendar_text_fallback':True,'saved_html_download_roundtrip':True,'mobile_share_and_fallback':True,'page_errors':errors,'network_requests':requests},indent=2))
+ (out/'results.json').write_text(json.dumps({'file_protocol':'blocked by managed Chromium policy; rendered offline from identical HTML instead','release_count':3,'filters':True,'empty_state':True,'responsive':True,'month_calendar':True,'seven_columns_fit_320_to_1280':True,'selected_day_details':True,'calendar_keyboard_navigation':True,'uncertain_dates_separate':True,'ics_download':True,'calendar_text_fallback':True,'saved_html_download_roundtrip':True,'embedded_covers_and_mobile_layout':True,'artist_release_navigation':True,'mobile_share_and_fallback':True,'page_errors':errors,'network_requests':requests},indent=2))
  print('PASS: offline list and calendar, shared filters, uncertain dates, ICS download, desktop/mobile layout; no external requests or JavaScript errors.')

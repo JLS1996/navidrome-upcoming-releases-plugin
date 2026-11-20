@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const Version = "0.3.1"
+const Version = "0.4.0"
 
 func MusicBrainzUserAgent() string {
 	return "NavidromeReleaseRadar/" + Version + " (https://github.com/JLS1996/navidrome-upcoming-releases-plugin)"
@@ -44,6 +44,8 @@ type Entry struct {
 	Failures     int       `json:"failures,omitempty"`
 }
 type State struct {
+	PreferArtwork       bool    `json:"preferArtwork,omitempty"`
+	ArtworkProblem      string  `json:"artworkProblem,omitempty"`
 	MusicBrainzFailures int     `json:"musicBrainzFailures,omitempty"`
 	MusicBrainzProblem  string  `json:"musicBrainzProblem,omitempty"`
 	IntegrationProblem  string  `json:"integrationProblem,omitempty"`
@@ -59,6 +61,8 @@ type State struct {
 	Problem             string  `json:"problem,omitempty"`
 }
 type Config struct {
+	CoverArt          bool
+	Covers            map[string]string
 	CalendarNamespace string
 	Username          string
 	AheadDays         int

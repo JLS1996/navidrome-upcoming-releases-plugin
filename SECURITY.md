@@ -8,7 +8,9 @@ work from local files, with all dashboard data embedded. Do not put generated fi
 in a public web directory or map them through a reverse proxy.
 
 The plugin makes outbound requests for MusicBrainz metadata and for integrations
-that an administrator explicitly configures. Calendar GET requests retrieve events
+that an administrator explicitly configures. Optional artwork sends public release
+group IDs to Cover Art Archive / Internet Archive and embeds cached thumbnails;
+opening the report does not fetch images from those services. Calendar GET requests retrieve events
 from the configured calendar provider; they do not make Navidrome files web-accessible.
 No additional plugin route or unauthenticated Navidrome view is installed.
 
@@ -25,9 +27,12 @@ No additional plugin route or unauthenticated Navidrome view is installed.
   have verified when notifications contain private information.
 - Use a dedicated music calendar. Only plugin-owned event IDs are managed;
   ownership markers and ETags protect updates to existing events.
-- Tokens and acknowledgements stay in private plugin storage. They are never
+- Tokens and delivery acknowledgements stay in private plugin storage and are never
   embedded in HTML or `.ics` output. Do not publish Navidrome config, runtime
   databases, integration state or OAuth credential files.
+- The artwork cache (`covers.json`) is private working data. Enabling covers embeds
+  its images in HTML, so copied reports include them. Thumbnail downloads use only
+  approved HTTPS artwork hosts, without notification or calendar credentials.
 - Custom hosts require explicit manifest permissions. Never add a global `*`
   allowlist to work around a network error.
 

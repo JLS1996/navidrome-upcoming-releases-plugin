@@ -19,8 +19,9 @@ Use **General → Refresh request** to request a new cycle.
 ## Opening the report
 
 The HTML contains its own data, styles, scripts and calendar export. It works
-offline; only source links require internet. Refresh an open local file to load
-updated results. A copied file is a snapshot: copy it again to get newer data.
+offline. Artist and release-title links open their MusicBrainz release group and
+require internet. Use a full browser if a mobile file preview restricts navigation.
+Refresh an open local file to load updated results. A copied file is a snapshot: copy it again to get newer data.
 
 The calendar fits all seven weekdays on mobile. Select a day to read the full
 release titles below the grid; badges show how many releases are on each day.
@@ -38,8 +39,8 @@ is not the same as a path on your desktop.
 Plugin storage is private: its directory is owner-only and report files are
 created with mode `0600`. When Navidrome runs under a different OS user, arrange
 host-side access or copy only `upcoming-releases.html` and `music-releases.ics`
-to a private location you can open. Keep `state.json` and `integrations.json`
-private; they contain library metadata and integration state.
+to a private location you can open. Keep `state.json`, `integrations.json` and the
+optional `covers.json` cache private; they contain library metadata and integration state.
 
 The plugin serves no files over HTTP. Keep reports out of public web roots and
 reverse-proxy file mappings.

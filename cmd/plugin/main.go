@@ -46,6 +46,7 @@ func str(key, def string) string {
 }
 func config() (radar.Config, error) {
 	c := radar.DefaultConfig()
+	c.CoverArt = str("cover_art", "false") == "true"
 	c.CalendarNamespace = str("calendar_namespace", "release-radar")
 	var err error
 	c.AheadDays, err = strconv.Atoi(str("ahead_days", "90"))
@@ -182,26 +183,62 @@ func (p *plugin) tick() error {
 	}
 	previousProblem := s.Problem
 	s.Problem = ""
-	view := radar.Version + "/" + fmt.Sprintf("%d/%d/%v/%v/%t", c.AheadDays, c.PastDays, c.PrimaryTypes, c.SecondaryTypes, c.IncludeStandard) + ic.Fingerprint()
+	view := radar.Version + "/" + fmt.Sprintf("%d/%d/%v/%v/%t", c.AheadDays, c.PastDays, c.PrimaryTypes, c.SecondaryTypes, c.IncludeStandard) + fmt.Sprint(c.CoverArt) + ic.Fingerprint()
 	viewChanged := s.ViewConfig != view
 	s.ViewConfig = view
 	d, loadErr := radar.LoadDeliveries(dir)
 	if loadErr != nil {
 		return finish(loadErr)
 	}
+	var artwork radar.ArtworkState
+	var artworkErr error
+	artworkChanged := false
+	if c.CoverArt {
+		artwork, artworkErr = radar.LoadArtwork(dir)
+		if artworkErr == nil {
+			artworkChanged = artwork.Reconcile(s, c, now)
+		}
+	}
+	artworkRequest := false
+	if c.CoverArt && artworkErr == nil && s.PreferArtwork {
+		artworkRequest = artwork.Step(send, now)
+	}
 	activeIntegrations, configurationProblem := ic.ValidParts()
 	deliveryChanged := false
-	if d.PreferDelivery {
+	if !artworkRequest && d.PreferDelivery {
 		deliveryChanged = d.Step(s, c, activeIntegrations, send, now)
 	}
 	changed := false
-	if !deliveryChanged {
+	if !artworkRequest && !deliveryChanged {
 		changed = s.Step(func(endpoint string) (radar.Response, error) {
 			ua := radar.MusicBrainzUserAgent()
 			return send(radar.HTTPRequest{Method: "GET", URL: endpoint, Headers: map[string]string{"User-Agent": ua, "Accept": "application/json"}})
 		}, c, now)
 		if !changed {
 			deliveryChanged = d.Step(s, c, activeIntegrations, send, now)
+		}
+	}
+	if !artworkRequest && !deliveryChanged && !changed && c.CoverArt && artworkErr == nil {
+		artworkRequest = artwork.Step(send, now)
+	}
+	if artworkRequest {
+		s.PreferArtwork = false
+	} else if changed || deliveryChanged {
+		s.PreferArtwork = true
+	}
+	previousArtworkProblem := s.ArtworkProblem
+	s.ArtworkProblem = ""
+	if c.CoverArt {
+		if artworkErr != nil {
+			s.ArtworkProblem = "Cover cache could not be read; preserve covers.json before resetting it"
+		} else {
+			c.Covers = artwork.Images()
+			s.ArtworkProblem = artwork.Problem
+			if artworkChanged || artworkRequest {
+				if err = radar.SaveArtwork(dir, artwork); err != nil {
+					s.ArtworkProblem = "Cover cache could not be saved"
+				}
+			}
 		}
 	}
 	if deliveryChanged {
@@ -218,7 +255,7 @@ func (p *plugin) tick() error {
 	}
 
 	// Avoid rewriting the dashboard every idle tick. Render at least hourly for date windows.
-	if !changed && !deliveryChanged && !viewChanged && previousProblem == "" && previousIntegrationProblem == s.IntegrationProblem && s.DiscoveredAt != now.Unix() && now.Unix()-s.RenderedAt < 3600 {
+	if !changed && !deliveryChanged && !artworkRequest && !artworkChanged && previousArtworkProblem == s.ArtworkProblem && !viewChanged && previousProblem == "" && previousIntegrationProblem == s.IntegrationProblem && s.DiscoveredAt != now.Unix() && now.Unix()-s.RenderedAt < 3600 {
 		return nil
 	}
 	return finish(nil)

@@ -89,14 +89,14 @@ try:
    assert card.evaluate('(n)=>n.scrollWidth<=n.clientWidth+1'),'configuration card overflows horizontally'
   for name in categories:
    category(name);assert_spacing()
-   files=page.get_by_text('Generated files',exact=True).bounding_box()
+   files=page.get_by_text('Info',exact=True).bounding_box()
    tabs=page.get_by_role('tablist').bounding_box()
    access=page.get_by_text('Library access',exact=True).bounding_box()
    permission=page.get_by_role('heading',name='Users Permission',exact=True).bounding_box()
    assert files and tabs and access and permission
    assert files['y']<tabs['y']<access['y']<permission['y'],'information was not placed outside tabs above permission cards'
   assert page.get_by_role('tab',name='Local files',exact=True).count()==0
-  assert page.get_by_role('heading',name=re.compile('^Optional integrations send release information')).is_visible()
+  assert page.get_by_role('heading',name=re.compile('^Alerts and calendar sync are optional')).is_visible()
   category('Calendar')
   assert page.get_by_label(titles['caldav_app_password'],exact=True).count()==0
   assert page.get_by_label(titles['google_client_secret'],exact=True).count()==0
@@ -110,6 +110,7 @@ try:
    control=page.get_by_label(titles[name],exact=True);control.wait_for();assert control.get_attribute('type')=='password';control.fill('fixture-'+name)
   assert_spacing()
   category('General')
+  page.get_by_role('checkbox',name='Download cover art',exact=True).check()
   assert page.get_by_label('Navidrome username',exact=True).count()==0
   assert page.get_by_label('MusicBrainz contact',exact=True).count()==0
   assert page.get_by_label('Export library ID',exact=True).count()==0
@@ -124,7 +125,7 @@ try:
   record=api('/api/plugin/release-radar');values=json.loads(record['config'])
   assert not record['enabled'],'test must not enable outbound integrations'
   for removed in ['username','contact','export_library_id','include_secondary']:assert removed not in values
-  assert values['include_live'] is True and values['include_singles'] is True
+  assert values['include_live'] is True and values['include_singles'] is True and values['cover_art'] is True
   for name in secret_fields:assert values[name]=='fixture-'+name
   page.reload();page.get_by_label('Artist ID overrides',exact=True).wait_for()
   category('Releases');assert page.get_by_role('checkbox',name='Live',exact=True).is_checked()

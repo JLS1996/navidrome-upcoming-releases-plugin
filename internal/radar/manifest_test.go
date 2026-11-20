@@ -53,7 +53,7 @@ func TestManifestCredentialControlsRenderWithoutUnknownFormats(t *testing.T) {
 	if m.Config.UI.Type != "VerticalLayout" || len(m.Config.UI.Elements) != 3 {
 		t.Fatal("configuration needs information outside its tabs")
 	}
-	if m.Config.UI.Elements[0].Type != "Group" || m.Config.UI.Elements[0].Label != "Generated files" || m.Config.UI.Elements[1].Type != "Categorization" || m.Config.UI.Elements[2].Label != "Library access" {
+	if m.Config.UI.Elements[0].Type != "Group" || m.Config.UI.Elements[0].Label != "Info" || m.Config.UI.Elements[1].Type != "Categorization" || m.Config.UI.Elements[2].Label != "Library access" {
 		t.Fatal("generated file and access information must surround the tabs")
 	}
 	controls := map[string]string{}

@@ -6,20 +6,21 @@
 
 [![CI](https://github.com/JLS1996/navidrome-upcoming-releases-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/JLS1996/navidrome-upcoming-releases-plugin/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-0.3.1-green)
+![Version](https://img.shields.io/badge/version-0.4.0-green)
 ![Navidrome](https://img.shields.io/badge/tested%20with-Navidrome%200.64.2-orange)
 
 Keep up with new music from the artists already in your Navidrome library.
 
 **Local dashboard · Month calendar · iCalendar export · ntfy alerts · Google Calendar / CalDAV sync**
 
-![Calendar view with fictional demo releases](docs/images/calendar.png)
+![Fictional demo releases with optional embedded cover art](docs/images/dashboard.png)
 
 ## What it does
 
 - Finds upcoming and recent releases using the free MusicBrainz API.
 - Lets you choose albums, EPs, singles, live releases and other MusicBrainz types.
 - Generates an offline HTML dashboard with search, filters and a calendar that fits mobile screens.
+- Optionally embeds cover art for offline viewing, with a subtle card background.
 - Exports `.ics` files and optionally sends notifications or syncs a calendar.
 - Saves progress, retries failed lookups and updates events when release dates change.
 

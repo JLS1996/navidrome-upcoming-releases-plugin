@@ -2,7 +2,7 @@
 The fixture endpoint and loopback permission exist ONLY in the test package.
 Run from project root, with Go/TinyGo on PATH and NAVIDROME_BIN set.
 """
-import datetime,hashlib,http.server,json,os,pathlib,secrets,shutil,subprocess,tempfile,threading,time,urllib.request,zipfile
+import base64,struct,zlib,datetime,hashlib,http.server,json,os,pathlib,secrets,shutil,subprocess,tempfile,threading,time,urllib.request,zipfile
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 (ROOT/'test-runtime').mkdir(exist_ok=True)
 navidrome_bin=os.environ.get('NAVIDROME_BIN') or shutil.which('navidrome')
@@ -13,6 +13,11 @@ mbid='a74b1b7f-71a5-4011-9441-d0b5e4122711'
 rid='11111111-2222-4333-8444-555555555555'
 subprocess.run(['ffmpeg','-hide_banner','-loglevel','error','-f','lavfi','-i','sine=frequency=440:duration=1','-metadata','artist=Radiohead','-metadata','album_artist=Radiohead','-metadata','album=Integration fixture','-metadata','title=Generated test tone','-metadata','MUSICBRAINZ_ARTISTID='+mbid,'-metadata','MUSICBRAINZ_ALBUMARTISTID='+mbid,str(base/'music/test.flac')],check=True)
 requests=[];version=[1];rate_limit=[429,503]
+def png_chunk(kind,body):return struct.pack('>I',len(body))+kind+body+struct.pack('>I',zlib.crc32(kind+body)&0xffffffff)
+art_image=b'\x89PNG\r\n\x1a\n'+png_chunk(b'IHDR',struct.pack('>IIBBBBB',8,8,8,2,0,0,0))+png_chunk(b'IDAT',zlib.compress((b'\0'+b'\x60\xa0\x30'*8)*8))+png_chunk(b'IEND',b'')
+art_jpeg=subprocess.run(['ffmpeg','-hide_banner','-loglevel','error','-i','pipe:0','-frames:v','1','-f','image2pipe','-vcodec','mjpeg','pipe:1'],input=art_image,stdout=subprocess.PIPE,check=True).stdout
+art_format=[art_image]
+art_requests=[]
 notifications=[];caldav={};google={};token_requests=[];calendar_writes=[]
 
 class Handler(http.server.BaseHTTPRequestHandler):
@@ -23,6 +28,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
  def do_GET(self):
   from urllib.parse import urlsplit,parse_qs
   path=urlsplit(self.path).path
+  if path.startswith('/release-group/'):
+   art_requests.append(path);assert 'Authorization' not in self.headers;return self.reply(307,headers={'Location':'https://archive.org/download/fixture-thumb.png'})
+  if path=='/download/fixture-thumb.png':
+   art_requests.append(path);assert 'Authorization' not in self.headers;return self.reply(200,art_format[0],{'Content-Type':'application/octet-stream'})
   if path.startswith('/caldav/'):
    if path not in caldav:return self.reply(404)
    entry=caldav[path];return self.reply(200,entry['body'],{'ETag':entry['etag']})
@@ -81,7 +90,7 @@ fixture=http.server.ThreadingHTTPServer(('127.0.0.1',0),Handler);threading.Threa
 fixture_url=f'http://127.0.0.1:{fixture.server_port}/ws/2/'
 wasm=base/'fixture.wasm'
 fixture_source=ROOT/'internal/radar/provider_fixture.go'
-fixture_source.write_text('//go:build radar_fixture\n\npackage radar\nfunc init(){mbBase='+json.dumps(fixture_url)+';integrationTransportBase='+json.dumps(fixture_url.removesuffix('/ws/2/'))+'}\n')
+fixture_source.write_text('//go:build radar_fixture\n\npackage radar\nfunc init(){mbBase='+json.dumps(fixture_url)+';integrationTransportBase='+json.dumps(fixture_url.removesuffix('/ws/2/'))+';artworkTransportBase='+json.dumps(fixture_url.removesuffix('/ws/2/'))+'}\n')
 try:
  subprocess.run(['tinygo','build','-o',str(wasm),'-target','wasip1','-buildmode=c-shared','-tags','radar_fixture','./cmd/plugin'],check=True,cwd=ROOT)
 finally:fixture_source.unlink()
@@ -138,6 +147,7 @@ try:
  first=wait_for(completed,120);assert len(first['entries'][0]['releases'])==1
  wait_for(lambda:len(owned_caldav())==1 and deliveries()['ntfyReady'])
  assert not notifications,'initial notification backlog was not suppressed'
+ assert not art_requests,'cover art downloaded while disabled'
  assert (storage/'music-releases.ics').exists()
  assert not (base/'music/upcoming-releases.html').exists() and not (base/'music/music-releases.ics').exists(),'legacy setting wrote outside plugin storage'
  storage_mode=(storage/'upcoming-releases.html').stat().st_mode & 0o777
@@ -164,6 +174,20 @@ try:
  html=(storage/'upcoming-releases.html').read_text();assert '[fixture] Updated release 1' not in html and '[fixture] Updated release 2' in html
  wait_for(lambda:len(notifications)==1 and any(b'[fixture] Updated release 2' in item['body'] for item in owned_caldav().values()))
  assert len(owned_caldav())==1,'CalDAV duplicated a date-changed event'
+ # Artwork uses separate callbacks, survives toggles, and stays inside the offline report.
+ update(config=settings(cover_art=True))
+ wait_for(lambda:'class="release-cover"' in (storage/'upcoming-releases.html').read_text())
+ art=json.loads((storage/'covers.json').read_text());assert base64.b64decode(art['records'][rid]['data'].split(',')[1])==art_image
+ assert len(art_requests)==2,'redirect/image requests were not paced and cached'
+ assert 'data:image/png;base64,' in (storage/'upcoming-releases.html').read_text()
+ update(config=settings(cover_art=False));wait_for(lambda:'class="release-cover"' not in (storage/'upcoming-releases.html').read_text())
+ time.sleep(3);assert len(art_requests)==2,'disabled artwork made a request'
+ update(config=settings(cover_art=True));wait_for(lambda:'class="release-cover"' in (storage/'upcoming-releases.html').read_text())
+ assert len(art_requests)==2,'cached artwork re-fetched on re-enable'
+ # Both common thumbnail codecs must work in TinyGo/WASM, not just native Go.
+ stop();cached=json.loads((storage/'covers.json').read_text());cached['records'][rid]['data']='';cached['records'][rid]['checkedAt']=0;(storage/'covers.json').write_text(json.dumps(cached));art_format[0]=art_jpeg
+ start();wait_for(lambda:'data:image/jpeg;base64,' in (storage/'upcoming-releases.html').read_text())
+ assert len(art_requests)==4,'JPEG thumbnail did not complete through redirect handling'
  # Google OAuth refresh and managed event create/update/delete, against the same fixture.
  google['unrelated-user-event']={'id':'unrelated-user-event','summary':'Do not modify'}
  update(config=settings(calendar_provider='google',google_calendar_id='fixture@example.com',google_client_id='fixture-client',google_client_secret='fixture-secret',google_refresh_token='fixture-refresh'))
@@ -197,7 +221,7 @@ try:
  wait_for(lambda:call('/api/plugin/release-radar').get('enabled') is False)
  before_revoked=len(requests);time.sleep(3);assert len(requests)==before_revoked,'requests continued after revocation'
  # Navidrome disables the runtime before it can clear old disk snapshots.
- results={'navidrome':'0.64.2','wasm_runtime':True,'storage_and_atomic_rename':True,'real_library_discovery':True,'http_429_backoff':True,'http_503_global_backoff_and_restart':True,'pagination_and_deduplication':True,'metadata_escaping_in_wasm':True,'restart_persistence':True,'changed_release_replaces_snapshot':True,'display_config_refresh':True,'idle_upgrade_refresh_preserves_lookup_cache':True,'library_revocation_disables_plugin':True,'old_disk_snapshot_requires_manual_removal':True,'storage_only_reports':True,'storage_file_mode':oct(storage_mode),'legacy_identity_and_contact_ignored':True,'ntfy_baseline_and_update_alerts':True,'ntfy_notifications':len(notifications),'caldav_create_and_date_update':True,'google_token_refresh_create_patch_delete':True,'unrelated_calendar_event_preserved':True,'ics_file_export':True,'fixture_requests':len(requests),'user_library_revocation_clears_cache':True,'automatic_granted_user_selection':True,'ambiguous_grants_stop_processing':True}
+ results={'navidrome':'0.64.2','wasm_runtime':True,'storage_and_atomic_rename':True,'real_library_discovery':True,'http_429_backoff':True,'http_503_global_backoff_and_restart':True,'pagination_and_deduplication':True,'metadata_escaping_in_wasm':True,'restart_persistence':True,'changed_release_replaces_snapshot':True,'display_config_refresh':True,'idle_upgrade_refresh_preserves_lookup_cache':True,'library_revocation_disables_plugin':True,'old_disk_snapshot_requires_manual_removal':True,'storage_only_reports':True,'storage_file_mode':oct(storage_mode),'legacy_identity_and_contact_ignored':True,'ntfy_baseline_and_update_alerts':True,'ntfy_notifications':len(notifications),'caldav_create_and_date_update':True,'google_token_refresh_create_patch_delete':True,'unrelated_calendar_event_preserved':True,'ics_file_export':True,'offline_artwork_redirect_cache_and_toggle':True,'wasm_png_and_jpeg_thumbnails':True,'fixture_requests':len(requests),'user_library_revocation_clears_cache':True,'automatic_granted_user_selection':True,'ambiguous_grants_stop_processing':True}
  (ROOT/'dist/integration-results.json').write_text(json.dumps(results,indent=2));print(json.dumps(results,indent=2))
 finally:
  stop();fixture.shutdown()

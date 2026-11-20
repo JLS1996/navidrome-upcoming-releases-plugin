@@ -40,6 +40,7 @@ local compiler/cache locations; normal installations can use their existing PATH
 go test -race -cover ./...
 go vet ./...
 go run ./cmd/preview
+go run ./cmd/preview -covers -out dist/preview-covers.html
 ```
 
 The preview uses explicitly fictional sample releases. Open `dist/preview.html`
@@ -69,7 +70,9 @@ HTML offline and checks list/calendar filters, navigation, uncertain dates and
 calendar download, mobile file sharing and its text fallback. Calendar checks
 cover all seven columns at widths from 320 to 1280 pixels, selected-day details,
 long titles, multiple releases, keyboard navigation across month boundaries, and
-calendar downloads after saving and reopening the HTML. Sharing tests
+calendar downloads after saving and reopening the HTML. Artwork tests use original
+synthetic images and verify embedded covers, subtle backgrounds, and artist-link
+navigation without sending requests to public MusicBrainz pages. Sharing tests
 simulate the browser API; they do not replace a real-device Safari check. Direct `file://` navigation may be blocked by managed browser
 policies; verify local file opening in your deployment.
 
@@ -89,10 +92,12 @@ To verify the public Northlane lookup through the real filtering and export code
 
 ```sh
 RADAR_LIVE_MUSICBRAINZ=1 go test ./internal/radar -run TestLiveNorthlaneLookup -count=1 -v
+RADAR_LIVE_ARTWORK=1 go test ./internal/radar -run TestLiveNorthlaneCoverArt -count=1 -v
 ```
 
 This optional network test checks MusicBrainz's Anemoia metadata against a fixed
-November 2026 date window. It is excluded from ordinary tests and CI. Never use
+November 2026 date window. The artwork check follows approved redirects and validates a public thumbnail.
+Both are excluded from ordinary tests and CI. Never use
 personal accounts or credentials in automated integration tests.
 
 ## Public-source and release checks
